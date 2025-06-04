@@ -3,11 +3,12 @@
     <!-- 顶部导航栏 -->
     <el-header class="top-nav">
       <div class="left">
-        <span class="brand">面试助手</span>
-        <el-menu mode="horizontal" :default-active="activeMenu" @select="handleMenuSelect" class="nav-menu">
+        <span class="brand">AI面试小助手</span>
+        <el-menu mode="horizontal" :default-active="activeMenu" @select="handleMenuSelect" class="nav-menu"
+          style="min-width: 600px; flex-wrap: nowrap">
           <el-menu-item index="dashboard">模拟面试</el-menu-item>
-          <el-menu-item index="interviews">我的面试</el-menu-item>
-          <el-menu-item index="questions">题库</el-menu-item>
+          <el-menu-item index="interviews">简历分析</el-menu-item>
+          <el-menu-item index="questions">知识库</el-menu-item>
           <el-menu-item index="settings">设置</el-menu-item>
         </el-menu>
       </div>
@@ -20,49 +21,18 @@
     <el-main class="main-content">
       <!-- 模拟面试 -->
       <div v-if="activeMenu === 'dashboard'">
-        <el-card class="dashboard-card">
-          <h2>模拟面试 - 视频上传</h2>
-
-          <el-upload :http-request="customUpload" :show-file-list="false" :before-upload="beforeUpload">
-            <el-button type="primary" :disabled="uploading">选择并上传视频</el-button>
-          </el-upload>
-          <el-progress :percentage="progress" :text-inside="true" :stroke-width="20" type="line" status="active"
-            color="#409EFF" style="margin-top: 20px; width: 100%; max-width: 600px"
-            :format="(p) => `${p.toFixed(2)}%`" />
-
-          <p style="margin-top: 10px">当前进度：{{ progress.toFixed(2) }}%</p>
-
-
-          <div v-if="videoUrl" class="video-wrapper">
-            <video ref="videoRef" :src="videoUrl" controls class="video-player"></video>
-
-            <div class="video-actions">
-              <el-button type="danger" @click="deleteVideo">删除视频</el-button>
-              <el-button type="primary" @click="analyzeVideo">一键分析</el-button>
-            </div>
-          </div>
-        </el-card>
+        <!-- 替换上传部分为组件 -->
+        <DashboardUpload v-if="activeMenu === 'dashboard'" />
       </div>
 
       <!-- 我的面试 -->
       <div v-else-if="activeMenu === 'interviews'">
-        <el-card class="dashboard-card">
-          <h2>我的面试</h2>
-          <el-table :data="interviewList" style="width: 100%">
-            <el-table-column prop="company" label="公司" />
-            <el-table-column prop="position" label="职位" />
-            <el-table-column prop="date" label="日期" />
-            <el-table-column prop="status" label="状态" />
-          </el-table>
-        </el-card>
+        <ResumeUpload />
       </div>
 
-      <!-- 题库 -->
+      <!-- 题库：替换为组件 -->
       <div v-else-if="activeMenu === 'questions'">
-        <el-card class="dashboard-card">
-          <h2>题库</h2>
-          <el-tag v-for="(tag, index) in tags" :key="index" class="question-tag">{{ tag }}</el-tag>
-        </el-card>
+        <QuestionKnowledge />
       </div>
 
       <!-- 设置 -->
@@ -80,7 +50,10 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '@/utils/request'
-import { ElMessage } from 'element-plus'
+import DashboardUpload from '@/components/DashboardUpload.vue'
+import ResumeUpload from '@/components/ResumeUpload.vue'
+import QuestionKnowledge from '@/components/QuestionKnowledge.vue'
+
 
 const router = useRouter()
 const username = '测试用户'
@@ -118,142 +91,6 @@ onMounted(async () => {
     console.warn('无已有视频')
   }
 })
-
-const beforeUpload = (file: any) => {
-  const realFile = file instanceof File ? file : file.raw as File
-
-  console.log('上传文件对象:', file)
-  console.log('真实文件对象:', realFile)
-  console.log('文件类型:', realFile?.type)
-
-  if (!realFile || !realFile.type || !realFile.name) {
-    ElMessage.warning('无法识别文件类型')
-    return false
-  }
-
-  // ✅ 允许的 MIME 类型前缀或值
-  const allowedMimeTypes = [
-    'video/',                         // 常见前缀
-    'application/vnd.rn-realmedia'   // rm/rmvb 专用类型
-  ]
-
-  const isMimeAllowed = allowedMimeTypes.some(type =>
-    realFile.type.startsWith(type)
-  )
-
-  // ✅ 允许的文件扩展名
-  const ext = realFile.name.split('.').pop()?.toLowerCase()
-  const allowedExts = ['mp4', 'webm', 'ogg', 'rmvb']
-  const isExtAllowed = !!ext && allowedExts.includes(ext)
-
-  // ✅ 限制大小
-  const isLt10GB = realFile.size / 1024 / 1024 < 10240
-
-  if (!isMimeAllowed || !isExtAllowed) {
-    ElMessage.warning('不支持的文件格式，仅支持 mp4/webm/ogg/rmvb')
-    return false
-  }
-
-  if (!isLt10GB) {
-    ElMessage.warning('视频大小不能超过 100MB')
-    return false
-  }
-
-  return true
-}
-
-const customUpload = async (options: any) => {
-  const file = options.file as File
-  uploading.value = true
-  progress.value = 0
-  uploadedFileName.value = file.name
-
-  const formData = new FormData()
-  formData.append('file', file)
-
-  try {
-    console.log('▶️ 开始上传视频:', file.name)
-    const uploadRes = await request.post('/file/async-upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
-    console.log('✅ 上传接口返回:', uploadRes.data)
-
-    uploadedFileName.value = uploadRes.data
-    ElMessage.success('上传中，请稍等...')
-
-    // ⏱ 定时轮询上传进度
-    const timer = setInterval(async () => {
-      try {
-        console.log('📡 请求进度，参数:', uploadedFileName.value)
-
-        const filename = uploadedFileName.value
-        const encoded = encodeURIComponent(filename)
-        const res = await request.get(`/file/upload-progress?originalFilename=${encoded}`)
-
-
-        console.log('📊 进度查询结果:', res.data)
-
-        const percent = res.data
-        if (percent >= 0) {
-          progress.value = percent
-        }
-
-        if (progress.value >= 100) {
-          clearInterval(timer)
-          console.log('✅ 上传完成，获取视频地址...')
-
-          const urlRes = await request.get('/file/file-download-url', {
-            params: {
-              originalFilename: encodeURIComponent(uploadedFileName.value) // ✅ 编码参数
-            }
-          })
-
-          console.log('🎬 下载地址接口返回:', urlRes.data)
-
-          videoUrl.value = urlRes.data.data
-          ElMessage.success('上传成功！视频已可播放')
-          uploading.value = false
-        }
-      } catch (e) {
-        clearInterval(timer)
-        uploading.value = false
-        console.error('❌ 获取进度失败:', e)
-        ElMessage.error('进度获取失败，请稍后重试')
-      }
-    }, 1000)
-  } catch (error) {
-    uploading.value = false
-    console.error('❌ 上传出错:', error)
-    ElMessage.error('上传失败，请检查网络或文件格式')
-  }
-}
-
-
-
-
-// 删除视频
-const deleteVideo = async () => {
-  try {
-    const res = await request.delete('/file/delete', {
-      params: { fileName: uploadedFileName.value }
-    })
-    if (res.data.code === 200) {
-      ElMessage.success('视频已删除')
-      videoUrl.value = null
-      uploadedFileName.value = ''
-    } else {
-      ElMessage.error(res.data.message || '删除失败')
-    }
-  } catch (e) {
-    ElMessage.error('删除接口异常')
-  }
-}
-
-// 一键分析按钮（示例调用）
-const analyzeVideo = async () => {
-  ElMessage.success('正在分析中，请稍候...')
-  // await axios.post('/file/analyze', { fileName: uploadedFileName.value })
-}
 
 // 我的面试数据
 const interviewList = [

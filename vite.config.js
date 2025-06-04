@@ -26,6 +26,11 @@ export default defineConfig({
         target: 'http://localhost:8099', // ✅ 后端服务地址
         changeOrigin: true,
         rewrite: path => path,
+      },
+       '/rag': {
+        target: 'http://localhost:8099', // ✅ 后端服务地址
+        changeOrigin: true,
+        rewrite: path => path,
       }
     }
   }

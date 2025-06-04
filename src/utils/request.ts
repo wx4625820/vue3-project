@@ -1,11 +1,12 @@
-// src/utils/request.ts
 import axios from 'axios'
+import qs from 'qs' // ✅ 新增
 import { ElMessage } from 'element-plus'
 import router from '@/router'
 
 const request = axios.create({
   timeout: 10000,
-  withCredentials: true // ✅ 确保 session cookie 被带上
+  withCredentials: true,
+  paramsSerializer: params => qs.stringify(params, { indices: false }) // ✅ 关键配置
 })
 
 // 响应拦截器
