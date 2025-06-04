@@ -1,0 +1,32 @@
+// src/utils/request.ts
+import axios from 'axios'
+import { ElMessage } from 'element-plus'
+import router from '@/router'
+
+const request = axios.create({
+  timeout: 10000,
+  withCredentials: true // ✅ 确保 session cookie 被带上
+})
+
+// 响应拦截器
+request.interceptors.response.use(
+  response => {
+    if (response.data.code !== 200) {
+      ElMessage.error(response.data.msg || '接口错误')
+      return Promise.reject(response)
+    }
+    return response.data
+  },
+  error => {
+    const status = error.response?.status
+    if (status === 401) {
+      ElMessage.warning('登录失效，请重新登录')
+      router.push('/login')
+    } else {
+      ElMessage.error('请求失败，请稍后重试')
+    }
+    return Promise.reject(error)
+  }
+)
+
+export default request

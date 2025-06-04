@@ -1,32 +1,41 @@
 <template>
-  <el-card class="login-card" shadow="hover">
-    <h2 class="title">注册</h2>
-    <el-form :model="registerForm" :rules="rules" ref="registerFormRef" label-width="80px">
-      <el-form-item label="用户名" prop="username">
-        <el-input v-model="registerForm.username" placeholder="请输入用户名" />
-      </el-form-item>
+  <div class="register-page">
+    <div class="card">
+      <h2>注册账号</h2>
 
-      <el-form-item label="邮箱" prop="email">
-        <el-input v-model="registerForm.email" placeholder="请输入邮箱" />
-      </el-form-item>
+      <el-form
+        :model="registerForm"
+        :rules="rules"
+        ref="registerFormRef"
+        label-width="80px"
+        class="form"
+      >
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="registerForm.username" placeholder="请输入用户名" />
+        </el-form-item>
 
-      <el-form-item label="密码" prop="password">
-        <el-input type="password" v-model="registerForm.password" placeholder="请输入密码" show-password />
-      </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="registerForm.email" placeholder="请输入邮箱" />
+        </el-form-item>
 
-      <el-form-item>
-        <el-button type="primary" @click="onRegister">注册</el-button>
-        <el-button type="text" @click="goToLogin">已有账号？去登录</el-button>
-      </el-form-item>
-    </el-form>
-  </el-card>
+        <el-form-item label="密码" prop="password">
+          <el-input v-model="registerForm.password" type="password" placeholder="请输入密码" show-password />
+        </el-form-item>
+
+        <el-form-item>
+          <el-button type="primary" @click="onRegister">注册</el-button>
+          <el-button type="text" @click="goToLogin">已有账号？登录</el-button>
+        </el-form-item>
+      </el-form>
+    </div>
+  </div>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
-import { ElMessage, FormInstance, FormRules } from 'element-plus'
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 
 interface RegisterForm {
   username: string
@@ -42,7 +51,10 @@ const registerForm = reactive<RegisterForm>({
 
 const rules: FormRules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  email: [{ required: true, message: '请输入邮箱', trigger: 'blur' }],
+  email: [
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { type: 'email', message: '邮箱格式不正确', trigger: ['blur', 'change'] }
+  ],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
 
@@ -65,21 +77,43 @@ const onRegister = async () => {
       } catch (err) {
         ElMessage.error('注册请求失败，请稍后再试')
       }
+    } else {
+      ElMessage.error('请填写完整信息')
     }
   })
 }
 
+const goToLogin = () => {
+  router.push('/login')
+}
 </script>
 
 <style scoped>
-.login-card {
-  max-width: 400px;
-  margin: 100px auto;
-  padding: 20px;
+.register-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #eef5ff, #d2e0f5);
+  font-family: 'Georgia', serif;
 }
 
-.title {
+.card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  padding: 40px 30px;
+  width: 400px;
+}
+
+h2 {
   text-align: center;
-  margin-bottom: 20px;
+  font-size: 24px;
+  color: #2c3e50;
+  margin-bottom: 30px;
+}
+
+.form {
+  margin-top: 10px;
 }
 </style>

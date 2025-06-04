@@ -1,22 +1,26 @@
 <template>
-  <el-card class="forgot-password-card">
-    <h2 class="title">忘记密码 - 发送验证码</h2>
-    <el-form :model="form" :rules="rules" ref="formRef" label-width="80px">
-      <el-form-item label="邮箱" prop="email">
-        <el-input v-model="form.email" autocomplete="off" placeholder="请输入注册邮箱" />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" :loading="loading" @click="onSendCode">发送验证码</el-button>
-      </el-form-item>
-    </el-form>
-  </el-card>
+  <div class="forgot-password-page">
+    <div class="card">
+      <h2>忘记密码</h2>
+      <p class="subtitle">请输入注册邮箱，我们将发送验证码给你</p>
+
+      <el-form :model="form" :rules="rules" ref="formRef" label-width="80px" class="form">
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="form.email" autocomplete="off" placeholder="请输入注册邮箱" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :loading="loading" @click="onSendCode">发送验证码</el-button>
+        </el-form-item>
+      </el-form>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
-import { ElMessage, FormInstance, FormRules } from 'element-plus'
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 
 const router = useRouter()
 const loading = ref(false)
@@ -44,8 +48,6 @@ const onSendCode = () => {
         email: form.email
       })
 
-      console.log('res.data:', res.data)
-
       if (res.data.code === 200) {
         ElMessage.success(res.data.message || '验证码已发送，请检查邮箱')
         router.push('/reset-password')
@@ -63,13 +65,38 @@ const onSendCode = () => {
 </script>
 
 <style scoped>
-.forgot-password-card {
-  max-width: 400px;
-  margin: 80px auto;
-  padding: 20px;
+.forgot-password-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #eef5ff, #d2e0f5);
+  font-family: 'Georgia', serif;
 }
-.title {
+
+.card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  padding: 40px 30px;
+  width: 400px;
+}
+
+h2 {
   text-align: center;
+  font-size: 24px;
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 14px;
+  color: #888;
   margin-bottom: 20px;
+}
+
+.form {
+  margin-top: 10px;
 }
 </style>
