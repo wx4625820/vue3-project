@@ -20,7 +20,10 @@
 
         <el-form-item>
           <el-button type="primary" @click="onSubmit">登录</el-button>
-          <el-button type="text" @click="goToRegister">没有账号？注册</el-button>
+          <el-button type="text" @click="goToRegister">还没有账号？去注册</el-button>
+          <div class="forgot-password">
+            <el-button type="text" @click="goToForgot">忘记密码？</el-button>
+          </div>
         </el-form-item>
       </el-form>
     </div>
@@ -75,6 +78,10 @@ const onSubmit = () => {
 const goToRegister = () => {
   router.push('/register')
 }
+
+const goToForgot = () => {
+  router.push('/forgot-password')
+}
 </script>
 
 <style scoped>
@@ -99,7 +106,12 @@ h2 {
   text-align: center;
   font-size: 24px;
   color: #2c3e50;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
+}
+
+.forgot-password {
+  margin-left: auto;
+  padding-top: 4px;
 }
 
 .form {
