@@ -1,3 +1,4 @@
+[media pointer="file-service://file-35YVGrRCo6hdYSKWp1UE3L"]
 <template>
   <el-card class="dashboard-card">
     <!-- 标题 & 上传按钮 -->
@@ -16,21 +17,29 @@
       style="margin: 30px auto 0; width: 100%; max-width: 600px" />
 
     <!-- 视频播放区 -->
+    <!-- 视频播放区 -->
     <div v-if="showVideo && videoUrl" class="video-wrapper" :key="videoKey">
-      <video :src="videoUrl" controls class="video-player" />
+      <div class="video-left">
+        <video :src="videoUrl" controls class="video-player" />
+        <!-- 分析选项与按钮 -->
+        <div class="video-actions">
+          <el-select v-model="selectedRole" placeholder="请选择岗位" style="width: 160px">
+            <el-option label="技术岗" value="技术岗" />
+            <el-option label="运维岗" value="运维岗" />
+            <el-option label="测试岗" value="测试岗" />
+            <el-option label="产品岗" value="产品岗" />
+          </el-select>
+          <el-button type="primary" @click="analyzeVideo" :disabled="!selectedRole">一键分析</el-button>
+          <el-button type="danger" @click="deleteVideo">删除视频</el-button>
+        </div>
+      </div>
 
-      <!-- 分析选项与按钮 -->
-      <div class="video-actions">
-        <el-select v-model="selectedRole" placeholder="请选择岗位" style="width: 160px">
-          <el-option label="技术岗" value="技术岗" />
-          <el-option label="运维岗" value="运维岗" />
-          <el-option label="测试岗" value="测试岗" />
-          <el-option label="产品岗" value="产品岗" />
-        </el-select>
-        <el-button type="primary" @click="analyzeVideo" :disabled="!selectedRole">一键分析</el-button>
-        <el-button type="danger" @click="deleteVideo">删除视频</el-button>
+      <div class="video-right">
+        <!-- 这里预留展示分析结果/图表 -->
+        <div class="analysis-placeholder">分析结果区域</div>
       </div>
     </div>
+
 
     <!-- 上传初始化模态框 -->
     <el-dialog v-model="showInitDialog" title="提示" width="300px" :close-on-click-modal="false" :show-close="false">
@@ -172,19 +181,16 @@ const analyzeVideo = async () => {
 </script>
 
 <style scoped>
-.header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.upload-section {
-  margin-top: 20px;
-}
-
 .video-wrapper {
   margin-top: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.video-left {
+  flex: 0 0 55%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -192,7 +198,6 @@ const analyzeVideo = async () => {
 
 .video-player {
   width: 100%;
-  max-width: 800px;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
@@ -202,5 +207,24 @@ const analyzeVideo = async () => {
   display: flex;
   gap: 12px;
   align-items: center;
+}
+
+.video-right {
+  flex: 0 0 40%;
+  min-height: 300px;
+  background-color: #fff;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  box-sizing: border-box;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 16px;
+}
+
+.analysis-placeholder {
+  text-align: center;
 }
 </style>
