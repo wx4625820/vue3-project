@@ -1,7 +1,6 @@
-[media pointer="file-service://file-35YVGrRCo6hdYSKWp1UE3L"]
+[media pointer="file-service://file-2oAgXcszCvK7Foj3bSYPWw"]
 <template>
   <el-card class="dashboard-card">
-    <!-- 标题 & 上传按钮 -->
     <div class="header" v-if="!videoUrl">
       <h2>模拟面试 - 视频上传</h2>
       <div class="upload-section">
@@ -11,17 +10,13 @@
       </div>
     </div>
 
-    <!-- 上传中进度条 -->
     <el-progress v-if="uploading" :percentage="progress" :text-inside="true" :stroke-width="20" type="line"
       status="active" color="#409EFF" :format="p => `${p.toFixed(1)}%`"
       style="margin: 30px auto 0; width: 100%; max-width: 600px" />
 
-    <!-- 视频播放区 -->
-    <!-- 视频播放区 -->
     <div v-if="showVideo && videoUrl" class="video-wrapper" :key="videoKey">
       <div class="video-left">
         <video :src="videoUrl" controls class="video-player" />
-        <!-- 分析选项与按钮 -->
         <div class="video-actions">
           <el-select v-model="selectedRole" placeholder="请选择岗位" style="width: 160px">
             <el-option label="技术岗" value="技术岗" />
@@ -35,13 +30,28 @@
       </div>
 
       <div class="video-right">
-        <!-- 这里预留展示分析结果/图表 -->
-        <div class="analysis-placeholder">分析结果区域</div>
+        <template v-if="showChart">
+          <v-chart :option="radarOption" autoresize style="width: 100%; height: 100%" />
+        </template>
+        <template v-else>
+          <div class="dimension-explanation">
+            <div><span class="dim dim1">语言逻辑：</span> 评估语言是否清晰、有条理，表达是否连贯。</div>
+            <div><span class="dim dim2">情感语调：</span> 判断语音语调是否有情绪感染力，表达自然。</div>
+            <div><span class="dim dim3">专业知识水平：</span> 衡量答题中的专业性、准确性和深度。</div>
+            <div><span class="dim dim4">技能匹配度：</span> 回答是否贴合岗位技能要求，逻辑契合。</div>
+            <div><span class="dim dim5">眼神交流：</span> 是否有自然的视线交流，避免过多游离或低头。</div>
+            <div><span class="dim dim6">面部表情：</span> 表情是否自然、积极，有助于建立良好沟通。</div>
+          </div>
+        </template>
       </div>
     </div>
 
+    <div v-if="showResultBox" class="analysis-result">
+      <div class="output-box">
+        <pre>{{ streamResult }}</pre>
+      </div>
+    </div>
 
-    <!-- 上传初始化模态框 -->
     <el-dialog v-model="showInitDialog" title="提示" width="300px" :close-on-click-modal="false" :show-close="false">
       <div style="text-align: center">
         <el-icon class="is-loading">
@@ -50,11 +60,21 @@
         <p style="margin-top: 10px">正在初始化上传，请耐心等待…</p>
       </div>
     </el-dialog>
+
+    <el-dialog v-model="showAnalyzingDialog" title="分析中..." width="300px" :close-on-click-modal="false"
+      :show-close="false">
+      <div style="text-align: center">
+        <el-icon class="is-loading">
+          <Loading />
+        </el-icon>
+        <p style="margin-top: 10px">正在分析视频，请耐心等待...</p>
+      </div>
+    </el-dialog>
   </el-card>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '@/utils/request'
 import { Loading } from '@element-plus/icons-vue'
@@ -64,9 +84,13 @@ const progress = ref(0)
 const videoUrl = ref<string | null>(null)
 const uploadedFileName = ref('')
 const showInitDialog = ref(false)
+const showAnalyzingDialog = ref(false)
 const showVideo = ref(false)
 const videoKey = ref(0)
 const selectedRole = ref('')
+const showChart = ref(false)
+const showResultBox = ref(false)
+const streamResult = ref('')
 
 onMounted(async () => {
   try {
@@ -159,8 +183,6 @@ const deleteVideo = async () => {
     await request.delete('/file/delete', {
       params: { fileName: uploadedFileName.value }
     })
-
-    // 不判断 code，拦截器已处理
     videoUrl.value = null
     uploadedFileName.value = ''
     showVideo.value = false
@@ -168,6 +190,8 @@ const deleteVideo = async () => {
     uploading.value = false
     selectedRole.value = ''
     videoKey.value++
+    showChart.value = false
+    showResultBox.value = false
     ElMessage.success('视频已删除')
   } catch (e) {
     ElMessage.error('删除失败了')
@@ -175,8 +199,77 @@ const deleteVideo = async () => {
 }
 
 const analyzeVideo = async () => {
-  if (!selectedRole.value) return
-  ElMessage.success(`正在分析【${selectedRole.value}】，请稍候...`)
+  if (!selectedRole.value || !videoUrl.value) return
+
+  streamResult.value = ''
+  showChart.value = false
+  showResultBox.value = false
+  showAnalyzingDialog.value = true
+
+  try {
+    const response = await fetch('/rag/analyze-video', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: videoUrl.value })
+    })
+
+    if (!response.body) {
+      ElMessage.error('后端未返回内容')
+      showAnalyzingDialog.value = false
+      return
+    }
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder('utf-8')
+    let done = false
+
+    while (!done) {
+      const { value, done: doneReading } = await reader.read()
+      done = doneReading
+      if (value) {
+        const chunk = decoder.decode(value, { stream: true })
+        streamResult.value += chunk
+        if (!showResultBox.value) showResultBox.value = true
+        if (showAnalyzingDialog.value) showAnalyzingDialog.value = false
+        await nextTick()
+      }
+    }
+
+    showChart.value = true
+  } catch (err) {
+    console.error('analyzeVideo error:', err)
+    ElMessage.error('分析失败，请稍后再试')
+    showAnalyzingDialog.value = false
+  }
+}
+
+const radarOption = {
+  title: {
+    text: '综合能力分析',
+    left: 'center',
+    top: 10
+  },
+  tooltip: {},
+  radar: {
+    indicator: [
+      { name: '语言逻辑', max: 100 },
+      { name: '情感语调', max: 100 },
+      { name: '专业知识', max: 100 },
+      { name: '技能匹配', max: 100 },
+      { name: '眼神交流', max: 100 },
+      { name: '面部表情', max: 100 }
+    ],
+    radius: '60%'
+  },
+  series: [{
+    name: '评分',
+    type: 'radar',
+    data: [{
+      value: [80, 70, 85, 75, 90, 65],
+      name: '综合得分'
+    }],
+    areaStyle: {}
+  }]
 }
 </script>
 
@@ -185,7 +278,7 @@ const analyzeVideo = async () => {
   margin-top: 30px;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 24px;
 }
 
@@ -193,7 +286,23 @@ const analyzeVideo = async () => {
   flex: 0 0 55%;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   align-items: center;
+}
+
+.video-right {
+  flex: 0 0 40%;
+  background-color: #fff;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  box-sizing: border-box;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 16px;
+  min-height: 400px;
 }
 
 .video-player {
@@ -209,22 +318,41 @@ const analyzeVideo = async () => {
   align-items: center;
 }
 
-.video-right {
-  flex: 0 0 40%;
-  min-height: 300px;
-  background-color: #fff;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  box-sizing: border-box;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #999;
+.dimension-explanation {
   font-size: 16px;
+  line-height: 1.8;
+  color: #444;
+  text-align: left;
 }
 
-.analysis-placeholder {
-  text-align: center;
+.dim {
+  font-weight: bold;
+  margin-right: 4px;
+}
+
+.dim1 {
+  color: #409EFF;
+}
+
+.dim2 {
+  color: #E6A23C;
+}
+
+.dim3 {
+  color: #67C23A;
+}
+
+.dim4 {
+  color: #F56C6C;
+}
+
+.dim5 {
+  color: #909399;
+}
+
+.dim6 {
+  color: #8A2BE2;
 }
 </style>
+
+目前代码已经没有问题了，但是我需要生成雷达图根据我圈出来的地方

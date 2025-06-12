@@ -27,10 +27,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: path => path,
       },
-       '/rag': {
+      '/rag': {
         target: 'http://localhost:8099', // ✅ 后端服务地址
         changeOrigin: true,
         rewrite: path => path,
+        timeout: 600000,       // 10 分钟
+        proxyTimeout: 600000,  // 10 分钟
       }
     }
   }

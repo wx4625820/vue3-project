@@ -2,20 +2,17 @@
   <el-card class="resume-card">
     <h2>简历上传</h2>
 
-    <!-- 上传简历头部 -->
     <div class="upload-header">
       <el-upload :show-file-list="false" :before-upload="beforeUpload" :http-request="handleUpload">
         <el-button type="primary">上传 PDF 简历</el-button>
       </el-upload>
 
-      <!-- 放大按钮 -->
       <el-button circle class="icon-button" @click="dialogVisible = true">
         <el-icon>
           <FullScreen />
         </el-icon>
       </el-button>
 
-      <!-- 清除按钮 -->
       <el-button circle class="icon-button danger" @click="resumeStore.clear()">
         <el-icon>
           <Delete />
@@ -23,22 +20,20 @@
       </el-button>
     </div>
 
-    <!-- 简历文本框 -->
     <el-input type="textarea" v-model="resumeText" placeholder="请输入或粘贴简历内容..." :rows="10" class="resume-textarea" />
 
-    <!-- 一键分析按钮 -->
     <div style="text-align: right; margin-top: 10px">
       <el-button type="primary" :loading="analyzing" @click="analyze">一键分析</el-button>
     </div>
 
-    <!-- 分析结果 -->
     <el-card v-if="resultMarkdown" style="margin-top: 20px">
       <div class="markdown-body" v-html="renderedMarkdown" />
     </el-card>
 
-    <!-- 放大编辑弹窗 -->
+    <div id="radar-chart" style="width: 100%; height: 400px; margin-top: 30px" v-if="showChart" />
+
     <el-dialog v-model="dialogVisible" title="编辑简历内容" width="700px">
-      <el-input type="textarea" v-model="resumeText" :rows="20" placeholder="请输入或粘贴简历内容..." style="width: 100%" />
+      <el-input type="textarea" v-model="resumeText" :rows="20" style="width: 100%" />
       <template #footer>
         <el-button @click="dialogVisible = false">关闭</el-button>
       </template>
@@ -47,10 +42,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { FullScreen, Delete } from '@element-plus/icons-vue'
 import * as pdfjsLib from 'pdfjs-dist'
+import * as echarts from 'echarts'
 import { marked } from 'marked'
 import { useResumeStore } from '@/stores/resumeStore'
 
@@ -61,11 +57,20 @@ const resumeText = computed({
   get: () => resumeStore.text,
   set: (val) => resumeStore.setText(val),
 })
+
 const dialogVisible = ref(false)
 const analyzing = ref(false)
 const resultMarkdown = ref('')
+const renderedMarkdown = ref('')
+const showChart = ref(false)
 
-const renderedMarkdown = computed(() => marked(resultMarkdown.value))
+const dimensionScores = ref<Record<string, number>>({
+  基础信息: 0,
+  教育背景: 0,
+  工作经历: 0,
+  专业技能: 0,
+  行业对比: 0,
+})
 
 const beforeUpload = (file: File) => {
   if (!file.name.endsWith('.pdf')) {
@@ -84,20 +89,13 @@ const handleUpload = async (options: any) => {
       const typedArray = new Uint8Array(reader.result as ArrayBuffer)
       const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise
       let text = ''
-
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i)
         const content = await page.getTextContent()
-        const rawText = content.items
-          .map((item: any) => (typeof item.str === 'string' ? item.str.trim() : ''))
-          .join(' ')
-        const pageText = rawText
-          .replace(/([\u3002\uff01\uff1f!?])(?=[^\n])/g, '$1\n')
-          .replace(/([.!?])(?=\s+[A-Z])/g, '$1\n')
-          .replace(/(\s{2,})/g, '\n')
+        const rawText = content.items.map((item: any) => (typeof item.str === 'string' ? item.str.trim() : '')).join(' ')
+        const pageText = rawText.replace(/([\u3002\uff01\uff1f!?])(?=[^\n])/g, '$1\n').replace(/([.!?])(?=\s+[A-Z])/g, '$1\n').replace(/(\s{2,})/g, '\n')
         text += pageText + '\n\n'
       }
-
       resumeText.value = text.trim()
       ElMessage.success('解析成功')
     } catch (e) {
@@ -106,10 +104,7 @@ const handleUpload = async (options: any) => {
     }
   }
 
-  reader.onerror = () => {
-    ElMessage.error('读取文件失败')
-  }
-
+  reader.onerror = () => ElMessage.error('读取文件失败')
   reader.readAsArrayBuffer(file)
 }
 
@@ -121,8 +116,10 @@ const analyze = async () => {
 
   analyzing.value = true
   resultMarkdown.value = ''
+  renderedMarkdown.value = ''
+  showChart.value = false
 
-  const response = await fetch('/rag/analyze', {
+  const response = await fetch('/rag/analyze-resume', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content: resumeText.value }),
@@ -140,20 +137,24 @@ const analyze = async () => {
   let queue: string[] = []
   let pushing = false
 
-  const pushCharByChar = async () => {
+  const pushCharByChar = async (): Promise<void> => {
     if (pushing) return
     pushing = true
-
+    let counter = 0
     while (queue.length > 0) {
       const nextChunk = queue.shift()
       if (nextChunk) {
         for (const char of nextChunk) {
           resultMarkdown.value += char
-          await new Promise(resolve => setTimeout(resolve, 20)) // 控制打字速度
+          counter++
+          if (counter % 10 === 0) {
+            renderedMarkdown.value = await marked(resultMarkdown.value) as string
+          }
+          await new Promise(resolve => setTimeout(resolve, 20))
         }
       }
     }
-
+    renderedMarkdown.value = await marked(resultMarkdown.value) as string
     pushing = false
   }
 
@@ -162,12 +163,52 @@ const analyze = async () => {
     if (done) break
     const chunk = decoder.decode(value, { stream: true })
     queue.push(chunk)
-    pushCharByChar() // 触发打字逻辑
+    await pushCharByChar()
   }
 
+  await pushCharByChar()
+  extractScores()
+  showChart.value = true
+  renderRadarChart()
   analyzing.value = false
 }
 
+const extractScores = () => {
+  const markdown = resultMarkdown.value
+  const dimensions = ['基础信息', '教育背景', '工作经历', '专业技能', '行业对比']
+  dimensions.forEach((dim) => {
+    const regex = new RegExp(`##\\s*${dim}[\\s\\S]*?-\\s*\\*\\*评分\\*\\*[:：]\\s*(\\d{1,3})`)
+    const match = markdown.match(regex)
+    if (match?.[1]) {
+      dimensionScores.value[dim] = Number(match[1])
+    }
+  })
+}
+
+const renderRadarChart = async () => {
+  await nextTick()
+  const chartDom = document.getElementById('radar-chart')
+  if (!chartDom) return
+  const myChart = echarts.init(chartDom)
+  const option = {
+    title: { text: '简历综合评分雷达图' },
+    tooltip: {},
+    radar: {
+      indicator: Object.keys(dimensionScores.value).map(key => ({
+        name: key,
+        max: 100
+      }))
+    },
+    series: [{
+      type: 'radar',
+      data: [{
+        value: Object.values(dimensionScores.value),
+        name: '评分'
+      }]
+    }]
+  }
+  myChart.setOption(option)
+}
 </script>
 
 <style scoped>
