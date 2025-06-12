@@ -1,4 +1,3 @@
-[media pointer="file-service://file-2oAgXcszCvK7Foj3bSYPWw"]
 <template>
   <el-card class="dashboard-card">
     <div class="header" v-if="!videoUrl">
@@ -30,19 +29,14 @@
       </div>
 
       <div class="video-right">
-        <template v-if="showChart">
-          <v-chart :option="radarOption" autoresize style="width: 100%; height: 100%" />
-        </template>
-        <template v-else>
-          <div class="dimension-explanation">
-            <div><span class="dim dim1">语言逻辑：</span> 评估语言是否清晰、有条理，表达是否连贯。</div>
-            <div><span class="dim dim2">情感语调：</span> 判断语音语调是否有情绪感染力，表达自然。</div>
-            <div><span class="dim dim3">专业知识水平：</span> 衡量答题中的专业性、准确性和深度。</div>
-            <div><span class="dim dim4">技能匹配度：</span> 回答是否贴合岗位技能要求，逻辑契合。</div>
-            <div><span class="dim dim5">眼神交流：</span> 是否有自然的视线交流，避免过多游离或低头。</div>
-            <div><span class="dim dim6">面部表情：</span> 表情是否自然、积极，有助于建立良好沟通。</div>
-          </div>
-        </template>
+        <div class="dimension-explanation">
+          <div><span class="dim dim1">语言逻辑：</span> 评估语言是否清晰、有条理，表达是否连贯。</div>
+          <div><span class="dim dim2">情感语调：</span> 判断语音语调是否有情绪感染力，表达自然。</div>
+          <div><span class="dim dim3">专业知识水平：</span> 衡量答题中的专业性、准确性和深度。</div>
+          <div><span class="dim dim4">技能匹配度：</span> 回答是否贴合岗位技能要求，逻辑契合。</div>
+          <div><span class="dim dim5">眼神交流：</span> 是否有自然的视线交流，避免过多游离或低头。</div>
+          <div><span class="dim dim6">面部表情：</span> 表情是否自然、积极，有助于建立良好沟通。</div>
+        </div>
       </div>
     </div>
 
@@ -50,6 +44,7 @@
       <div class="output-box">
         <pre>{{ streamResult }}</pre>
       </div>
+      <v-chart v-if="showChart" :option="radarOption" autoresize style="width: 100%; height: 400px; margin-top: 20px" />
     </div>
 
     <el-dialog v-model="showInitDialog" title="提示" width="300px" :close-on-click-modal="false" :show-close="false">
@@ -74,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '@/utils/request'
 import { Loading } from '@element-plus/icons-vue'
@@ -91,6 +86,35 @@ const selectedRole = ref('')
 const showChart = ref(false)
 const showResultBox = ref(false)
 const streamResult = ref('')
+const radarData = ref([0, 0, 0, 0, 0, 0])
+
+const radarIndicators = ['语言逻辑', '情感语调', '专业知识', '技能匹配', '眼神交流', '面部表情']
+const radarOption = computed(() => ({
+  title: { text: '综合能力分析', left: 'center', top: 10 },
+  tooltip: {},
+  radar: {
+    indicator: radarIndicators.map(name => ({ name, max: 100 })),
+    radius: '60%'
+  },
+  series: [{
+    name: '评分',
+    type: 'radar',
+    data: [{ value: radarData.value, name: '综合得分' }],
+    areaStyle: {}
+  }]
+}))
+
+function extractRadarScores(markdown: string): number[] {
+  const scoreMap: Record<string, number> = {}
+  const regex = /([语言逻辑情感语调专业知识技能匹配眼神交流面部表情]{3,})[：:（(\s]*?(\d{2})\s*(?:\/100)?/g
+  let match: RegExpExecArray | null
+  while ((match = regex.exec(markdown)) !== null) {
+    const label = match[1].trim()
+    const score = parseInt(match[2])
+    if (!isNaN(score)) scoreMap[label] = score
+  }
+  return radarIndicators.map(label => scoreMap[label] ?? 0)
+}
 
 onMounted(async () => {
   try {
@@ -113,7 +137,6 @@ const beforeUpload = (file: any) => {
   const ext = realFile.name.split('.').pop()?.toLowerCase()
   const allowedExts = ['mp4']
   const isLt4GB = realFile.size / 1024 / 1024 < 4096
-
   if (!ext || !allowedExts.includes(ext)) {
     ElMessage.warning('仅支持上传 mp4 格式视频')
     return false
@@ -131,32 +154,23 @@ const customUpload = async (options: any) => {
   progress.value = 0
   uploadedFileName.value = file.name
   showInitDialog.value = true
-
   const formData = new FormData()
   formData.append('file', file)
-
   try {
     await request.post('/file/async-upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
-
     showInitDialog.value = false
-
     const timer = setInterval(async () => {
       try {
         const res = await request.get(`/file/upload-progress`, {
           params: { originalFilename: uploadedFileName.value }
         })
-
         const percent = res.data
-        if (percent >= 0) {
-          progress.value = percent
-        }
-
+        if (percent >= 0) progress.value = percent
         if (progress.value >= 100) {
           clearInterval(timer)
           uploading.value = false
-
           const urlRes = await request.get('/file/file-download-url', {
             params: { originalFilename: uploadedFileName.value }
           })
@@ -192,6 +206,7 @@ const deleteVideo = async () => {
     videoKey.value++
     showChart.value = false
     showResultBox.value = false
+    streamResult.value = ''
     ElMessage.success('视频已删除')
   } catch (e) {
     ElMessage.error('删除失败了')
@@ -200,29 +215,24 @@ const deleteVideo = async () => {
 
 const analyzeVideo = async () => {
   if (!selectedRole.value || !videoUrl.value) return
-
   streamResult.value = ''
   showChart.value = false
   showResultBox.value = false
   showAnalyzingDialog.value = true
-
   try {
     const response = await fetch('/rag/analyze-video', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: videoUrl.value })
     })
-
     if (!response.body) {
       ElMessage.error('后端未返回内容')
       showAnalyzingDialog.value = false
       return
     }
-
     const reader = response.body.getReader()
     const decoder = new TextDecoder('utf-8')
     let done = false
-
     while (!done) {
       const { value, done: doneReading } = await reader.read()
       done = doneReading
@@ -234,42 +244,13 @@ const analyzeVideo = async () => {
         await nextTick()
       }
     }
-
+    radarData.value = extractRadarScores(streamResult.value)
     showChart.value = true
   } catch (err) {
     console.error('analyzeVideo error:', err)
     ElMessage.error('分析失败，请稍后再试')
     showAnalyzingDialog.value = false
   }
-}
-
-const radarOption = {
-  title: {
-    text: '综合能力分析',
-    left: 'center',
-    top: 10
-  },
-  tooltip: {},
-  radar: {
-    indicator: [
-      { name: '语言逻辑', max: 100 },
-      { name: '情感语调', max: 100 },
-      { name: '专业知识', max: 100 },
-      { name: '技能匹配', max: 100 },
-      { name: '眼神交流', max: 100 },
-      { name: '面部表情', max: 100 }
-    ],
-    radius: '60%'
-  },
-  series: [{
-    name: '评分',
-    type: 'radar',
-    data: [{
-      value: [80, 70, 85, 75, 90, 65],
-      name: '综合得分'
-    }],
-    areaStyle: {}
-  }]
 }
 </script>
 
@@ -286,7 +267,7 @@ const radarOption = {
   flex: 0 0 55%;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
 }
 
@@ -297,12 +278,12 @@ const radarOption = {
   border-radius: 8px;
   box-sizing: border-box;
   padding: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   color: #999;
   font-size: 16px;
   min-height: 400px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .video-player {
@@ -353,6 +334,15 @@ const radarOption = {
 .dim6 {
   color: #8A2BE2;
 }
-</style>
 
-目前代码已经没有问题了，但是我需要生成雷达图根据我圈出来的地方
+.output-box {
+  width: 100%;
+  background: #f7f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  margin-top: 16px;
+  white-space: pre-wrap;
+}
+</style>
