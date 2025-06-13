@@ -1,5 +1,5 @@
 <template>
-  <el-card class="dashboard-card">
+  <div class="dashboard-upload-wrapper">
     <div class="header" v-if="!videoUrl">
       <h2>模拟面试 - 视频上传</h2>
       <div class="upload-section">
@@ -65,7 +65,7 @@
         <p style="margin-top: 10px">正在分析视频，请耐心等待...</p>
       </div>
     </el-dialog>
-  </el-card>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -255,6 +255,13 @@ const analyzeVideo = async () => {
 </script>
 
 <style scoped>
+.dashboard-upload-wrapper {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: transparent;
+}
+
 .video-wrapper {
   margin-top: 30px;
   display: flex;
@@ -273,12 +280,10 @@ const analyzeVideo = async () => {
 
 .video-right {
   flex: 0 0 40%;
-  background-color: #fff;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  box-sizing: border-box;
+  background-color: transparent;
+  border: none;
   padding: 20px;
-  color: #999;
+  color: #444;
   font-size: 16px;
   min-height: 400px;
   display: flex;

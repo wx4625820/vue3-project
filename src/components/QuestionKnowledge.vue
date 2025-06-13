@@ -1,16 +1,10 @@
 <template>
-  <el-card class="dashboard-card">
+  <div class="question-wrapper">
     <h2>提问</h2>
 
     <!-- 输入框 -->
-    <el-input
-      v-model="question"
-      placeholder="请输入你的问题，例如：Vue 的响应式原理是怎样的？"
-      type="textarea"
-      :rows="4"
-      class="question-input"
-      :disabled="typing"
-    />
+    <el-input v-model="question" placeholder="请输入你的问题，例如：Vue 的响应式原理是怎样的？" type="textarea" :rows="4"
+      class="question-input" :disabled="typing" />
 
     <!-- 操作按钮 -->
     <div class="question-actions">
@@ -23,7 +17,7 @@
       <h4>AI 答复：</h4>
       <v-md-preview :text="answer" />
     </div>
-  </el-card>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -45,13 +39,12 @@ const fullAnswer = ref('')
 const typing = ref(false)
 let typingTimer: number | null = null
 
-// 逐字打字
+// 打字动画
 const typeOutText = () => {
   let index = 0
   answer.value = ''
   typing.value = true
   if (typingTimer) clearInterval(typingTimer)
-
   typingTimer = window.setInterval(() => {
     if (index < fullAnswer.value.length) {
       answer.value += fullAnswer.value.charAt(index)
@@ -64,7 +57,7 @@ const typeOutText = () => {
   }, 15)
 }
 
-// 发送问题
+// 提交提问
 const submitQuestion = async () => {
   if (!question.value.trim()) {
     ElMessage.warning('请输入问题后再提问')
@@ -83,7 +76,6 @@ const submitQuestion = async () => {
 
     if (code === 200) {
       const content = typeof raw === 'string' ? raw : JSON.stringify(raw)
-      // 去除 <think> 标签本身，但保留内容
       fullAnswer.value = content.replace(/<\/?think>/g, '').trim()
       typeOutText()
     } else {
@@ -99,7 +91,7 @@ const submitQuestion = async () => {
   }
 }
 
-// 清空全部
+// 清空
 const clearAll = () => {
   question.value = ''
   fullAnswer.value = ''
@@ -109,9 +101,11 @@ const clearAll = () => {
 </script>
 
 <style scoped>
-.dashboard-card {
-  margin: 20px;
+.question-wrapper {
+  max-width: 900px;
+  margin: 0 auto;
   padding: 20px;
+  background-color: transparent;
 }
 
 .question-input {
@@ -125,10 +119,11 @@ const clearAll = () => {
 }
 
 .answer-box {
-  background: #f9f9f9;
+  background: #fff;
   border: 1px solid #e4e7ed;
   padding: 16px;
-  border-radius: 6px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 :deep(pre) {

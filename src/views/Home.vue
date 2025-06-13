@@ -1,45 +1,36 @@
 <template>
   <div class="home-container">
-    <el-header class="top-nav">
-      <div class="left">
-        <img src="/logo.png" alt="Logo" class="logo" />
-        <el-menu mode="horizontal" :default-active="activeMenu" @select="handleMenuSelect" class="nav-menu"
-          style="min-width: 600px; flex-wrap: nowrap">
-          <el-menu-item index="dashboard">模拟面试</el-menu-item>
-          <el-menu-item index="interviews">简历分析</el-menu-item>
-          <el-menu-item index="questions">知识库</el-menu-item>
-          <el-menu-item index="settings">设置</el-menu-item>
-        </el-menu>
-      </div>
-
-      <div class="right user-info">
-        <div class="user-info-wrapper">
-          <div class="user-text-group">
-            <div class="user-header">
-              <span class="welcome-text">欢迎回来</span>
-              <el-button type="text" @click="logout">退出</el-button>
+    <div class="top-wrapper">
+      <div class="top-nav">
+        <div class="left">
+          <img src="/logo.png" alt="Logo" class="logo" />
+          <el-menu mode="horizontal" :default-active="activeMenu" @select="handleMenuSelect" class="nav-menu">
+            <el-menu-item index="dashboard">模拟面试</el-menu-item>
+            <el-menu-item index="interviews">简历分析</el-menu-item>
+            <el-menu-item index="questions">知识库</el-menu-item>
+            <el-menu-item index="settings">设置</el-menu-item>
+          </el-menu>
+        </div>
+        <div class="right user-info">
+          <div class="user-info-wrapper">
+            <div class="user-text-group">
+              <div class="user-header">
+                <span class="welcome-text">欢迎回来</span>
+                <el-button type="text" @click="logout">退出</el-button>
+              </div>
+              <UsageCounter />
             </div>
-            <UsageCounter />
           </div>
         </div>
       </div>
-    </el-header>
+    </div>
 
-    <el-main class="main-content">
-      <div v-if="activeMenu === 'dashboard'">
-        <DashboardUpload />
-      </div>
-
-      <div v-else-if="activeMenu === 'interviews'">
-        <ResumeUpload />
-      </div>
-
-      <div v-else-if="activeMenu === 'questions'">
-        <QuestionKnowledge />
-      </div>
-
-      <div v-else-if="activeMenu === 'settings'">
-        <el-card class="dashboard-card">
+    <div class="main-content">
+      <div class="content-wrapper">
+        <DashboardUpload v-if="activeMenu === 'dashboard'" />
+        <ResumeUpload v-else-if="activeMenu === 'interviews'" />
+        <QuestionKnowledge v-else-if="activeMenu === 'questions'" />
+        <div v-else-if="activeMenu === 'settings'" class="settings-wrapper">
           <h2>修改密码</h2>
           <el-form :model="form" :rules="rules" ref="formRef" label-width="100px" class="change-password-form">
             <el-form-item label="原密码" prop="oldPassword">
@@ -55,9 +46,9 @@
               <el-button type="primary" @click="submitForm">提交</el-button>
             </el-form-item>
           </el-form>
-        </el-card>
+        </div>
       </div>
-    </el-main>
+    </div>
   </div>
 </template>
 
@@ -83,7 +74,6 @@ const logout = () => {
   router.push('/login')
 }
 
-// 修改密码表单逻辑
 const formRef = ref()
 const form = reactive({
   oldPassword: '',
@@ -124,7 +114,6 @@ const submitForm = () => {
           form.oldPassword = ''
           form.newPassword = ''
           form.confirmPassword = ''
-          // ✅ 跳转到“模拟面试”页面
           activeMenu.value = 'dashboard'
         } else {
           ElMessage.error(res.data.message)
@@ -139,27 +128,34 @@ const submitForm = () => {
 
 <style scoped>
 .home-container {
-  height: 100vh;
   display: flex;
   flex-direction: column;
-  font-family: 'Georgia', serif;
+  min-height: 100vh;
   background-color: #f7f9fc;
+  font-family: 'Georgia', serif;
+}
+
+.top-wrapper {
+  background-color: #fff;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .top-nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e0e0e0;
-  padding: 0 20px;
   height: 60px;
-  position: relative;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-left: 0;
+  padding-right: 0;
+  box-sizing: border-box;
 }
 
 .left {
   display: flex;
   align-items: center;
+  padding-left: 20px;
 }
 
 .logo {
@@ -170,13 +166,17 @@ const submitForm = () => {
 .nav-menu {
   background-color: transparent;
   border-bottom: none;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  min-width: 700px;
 }
 
 .right.user-info {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  min-width: 320px;
+  min-width: 280px;
+  margin-right: 20px;
 }
 
 .user-info-wrapper {
@@ -204,41 +204,20 @@ const submitForm = () => {
 
 .main-content {
   flex: 1;
-  padding: 30px 60px;
+  padding: 40px 0 60px;
 }
 
-.dashboard-card {
-  background: white;
-  border-radius: 12px;
+.content-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
   padding: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  margin-bottom: 30px;
-}
-
-.dashboard-card h2 {
-  margin-bottom: 16px;
-  color: #2c3e50;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .change-password-form {
   max-width: 500px;
   margin-top: 20px;
-}
-
-.video-wrapper {
-  margin-top: 20px;
-}
-
-.video-player {
-  width: 100%;
-  max-height: 400px;
-  border-radius: 8px;
-  margin-bottom: 10px;
-}
-
-.video-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
 }
 </style>
