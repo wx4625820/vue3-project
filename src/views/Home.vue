@@ -4,7 +4,7 @@
     <div class="top-wrapper">
       <div class="top-nav">
         <div class="left">
-          <img src="/logo.png" alt="Logo" class="logo" />
+          <img src="/logo.jpg" alt="Logo" class="logo" />
           <el-menu mode="horizontal" :default-active="activeMenu" @select="handleMenuSelect" class="nav-menu">
             <el-menu-item index="dashboard">模拟面试</el-menu-item>
             <el-menu-item index="interviews">简历分析</el-menu-item>
@@ -52,13 +52,12 @@
       </div>
     </div>
 
-    <!-- ✅ 底部横幅 -->
+    <!-- 底部横幅 -->
     <div class="footer-banner">
       <img src="/footer-banner.jpg" alt="让你的面试更轻松" class="footer-image" />
     </div>
   </div>
 </template>
-
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
@@ -144,7 +143,7 @@ const submitForm = () => {
 }
 
 .top-wrapper {
-  background-color: #fff;
+  background-color: #d9ecff;
   border-bottom: 1px solid #e0e0e0;
 }
 
@@ -155,8 +154,7 @@ const submitForm = () => {
   height: 60px;
   max-width: 1200px;
   margin: 0 auto;
-  padding-left: 0;
-  padding-right: 0;
+  padding: 0;
   box-sizing: border-box;
 }
 
@@ -213,20 +211,20 @@ const submitForm = () => {
 .main-content {
   width: 100%;
   flex: 1;
-  padding: 40px 0 60px;
+  padding: 0;
+  /* 🟢 清除顶部和底部 padding */
   box-sizing: border-box;
 }
 
 .content-wrapper {
   width: 100%;
+  height: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-
-  /* ✅ 修复内容换行问题 */
   word-break: break-word;
   overflow-wrap: break-word;
   white-space: normal;
@@ -239,10 +237,11 @@ const submitForm = () => {
 
 .footer-banner {
   width: 100%;
-   max-height: 120px; /* ✅ 添加这一行限制高度 */
+  max-height: 120px;
   background-color: #d9ecff;
   text-align: center;
-  margin-top: 40px;
+  margin-top: 0;
+  /* 🟢 取消顶部间距 */
 }
 
 .footer-image {
