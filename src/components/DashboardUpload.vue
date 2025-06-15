@@ -42,7 +42,7 @@
 
     <div v-if="showResultBox" class="analysis-result">
       <div class="output-box">
-        <pre>{{ streamResult }}</pre>
+        <div class="stream-text">{{ streamResult }}</div>
       </div>
       <v-chart v-if="showChart" :option="radarOption" autoresize style="width: 100%; height: 400px; margin-top: 20px" />
     </div>
@@ -163,7 +163,7 @@ const customUpload = async (options: any) => {
     showInitDialog.value = false
     const timer = setInterval(async () => {
       try {
-        const res = await request.get(`/file/upload-progress`, {
+        const res = await request.get('/file/upload-progress', {
           params: { originalFilename: uploadedFileName.value }
         })
         const percent = res.data
@@ -259,36 +259,22 @@ const analyzeVideo = async () => {
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
-  background-color: transparent;
 }
 
 .video-wrapper {
-  margin-top: 30px;
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  align-items: stretch;
+  align-items: flex-start;
   gap: 24px;
+  margin-top: 30px;
 }
 
-.video-left {
-  flex: 0 0 55%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-}
-
+.video-left,
 .video-right {
-  flex: 0 0 40%;
-  background-color: transparent;
-  border: none;
-  padding: 20px;
-  color: #444;
-  font-size: 16px;
-  min-height: 400px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  flex: 1 1 500px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .video-player {
@@ -307,8 +293,8 @@ const analyzeVideo = async () => {
 .dimension-explanation {
   font-size: 16px;
   line-height: 1.8;
-  color: #444;
   text-align: left;
+  word-break: break-word;
 }
 
 .dim {
@@ -340,6 +326,13 @@ const analyzeVideo = async () => {
   color: #8A2BE2;
 }
 
+.analysis-result {
+  max-width: 100%;
+  margin-top: 30px;
+  overflow-x: auto;
+  box-sizing: border-box;
+}
+
 .output-box {
   width: 100%;
   background: #f7f9fa;
@@ -348,6 +341,13 @@ const analyzeVideo = async () => {
   font-size: 14px;
   color: #333;
   margin-top: 16px;
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+
+.stream-text {
   white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 </style>

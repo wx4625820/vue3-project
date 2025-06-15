@@ -1,5 +1,6 @@
 <template>
   <div class="home-container">
+    <!-- 顶部导航 -->
     <div class="top-wrapper">
       <div class="top-nav">
         <div class="left">
@@ -25,6 +26,7 @@
       </div>
     </div>
 
+    <!-- 主体内容 -->
     <div class="main-content">
       <div class="content-wrapper">
         <DashboardUpload v-if="activeMenu === 'dashboard'" />
@@ -49,8 +51,14 @@
         </div>
       </div>
     </div>
+
+    <!-- ✅ 底部横幅 -->
+    <div class="footer-banner">
+      <img src="/footer-banner.jpg" alt="让你的面试更轻松" class="footer-image" />
+    </div>
   </div>
 </template>
+
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
@@ -203,21 +211,44 @@ const submitForm = () => {
 }
 
 .main-content {
+  width: 100%;
   flex: 1;
   padding: 40px 0 60px;
+  box-sizing: border-box;
 }
 
 .content-wrapper {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+  /* ✅ 修复内容换行问题 */
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 .change-password-form {
   max-width: 500px;
   margin-top: 20px;
+}
+
+.footer-banner {
+  width: 100%;
+   max-height: 120px; /* ✅ 添加这一行限制高度 */
+  background-color: #d9ecff;
+  text-align: center;
+  margin-top: 40px;
+}
+
+.footer-image {
+  width: 100%;
+  max-width: 100%;
+  display: block;
+  margin: 0 auto;
 }
 </style>
