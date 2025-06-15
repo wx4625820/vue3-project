@@ -28,27 +28,11 @@
 
     <!-- 主体内容 -->
     <div class="main-content">
-      <div class="content-wrapper">
+      <div class="page-wrapper">
         <DashboardUpload v-if="activeMenu === 'dashboard'" />
         <ResumeUpload v-else-if="activeMenu === 'interviews'" />
         <QuestionKnowledge v-else-if="activeMenu === 'questions'" />
-        <div v-else-if="activeMenu === 'settings'" class="settings-wrapper">
-          <h2>修改密码</h2>
-          <el-form :model="form" :rules="rules" ref="formRef" label-width="100px" class="change-password-form">
-            <el-form-item label="原密码" prop="oldPassword">
-              <el-input type="password" v-model="form.oldPassword" show-password />
-            </el-form-item>
-            <el-form-item label="新密码" prop="newPassword">
-              <el-input type="password" v-model="form.newPassword" show-password />
-            </el-form-item>
-            <el-form-item label="确认新密码" prop="confirmPassword">
-              <el-input type="password" v-model="form.confirmPassword" show-password />
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" @click="submitForm">提交</el-button>
-            </el-form-item>
-          </el-form>
-        </div>
+        <SettingsPanel v-else-if="activeMenu === 'settings'" />
       </div>
     </div>
 
@@ -60,14 +44,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import axios from 'axios'
 
 import DashboardUpload from '@/components/DashboardUpload.vue'
 import ResumeUpload from '@/components/ResumeUpload.vue'
 import QuestionKnowledge from '@/components/QuestionKnowledge.vue'
+import SettingsPanel from '@/components/SettingsPanel.vue'
 import UsageCounter from '@/components/UsageCounter.vue'
 
 const router = useRouter()
@@ -80,57 +63,6 @@ const handleMenuSelect = (index: string) => {
 const logout = () => {
   router.push('/login')
 }
-
-const formRef = ref()
-const form = reactive({
-  oldPassword: '',
-  newPassword: '',
-  confirmPassword: ''
-})
-
-const rules = {
-  oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }],
-  newPassword: [{ required: true, message: '请输入新密码', trigger: 'blur' }],
-  confirmPassword: [
-    { required: true, message: '请确认新密码', trigger: 'blur' },
-    {
-      validator: (_: any, value: string, callback: any) => {
-        if (value !== form.newPassword) {
-          callback(new Error('两次输入的密码不一致'))
-        } else {
-          callback()
-        }
-      },
-      trigger: 'blur'
-    }
-  ]
-}
-
-const submitForm = () => {
-  formRef.value?.validate(async (valid: boolean) => {
-    if (valid) {
-      try {
-        const res = await axios.post('/user/change-password', null, {
-          params: {
-            oldPassword: form.oldPassword,
-            newPassword: form.newPassword
-          }
-        })
-        if (res.data.code === 200) {
-          ElMessage.success('密码修改成功')
-          form.oldPassword = ''
-          form.newPassword = ''
-          form.confirmPassword = ''
-          activeMenu.value = 'dashboard'
-        } else {
-          ElMessage.error(res.data.message)
-        }
-      } catch (err) {
-        ElMessage.error('请求失败')
-      }
-    }
-  })
-}
 </script>
 
 <style scoped>
@@ -139,7 +71,6 @@ const submitForm = () => {
   flex-direction: column;
   min-height: 100vh;
   background-color: #f7f9fc;
-  font-family: 'Georgia', serif;
 }
 
 .top-wrapper {
@@ -209,30 +140,25 @@ const submitForm = () => {
 }
 
 .main-content {
-  width: 100%;
   flex: 1;
-  padding: 0;
-  /* 🟢 清除顶部和底部 padding */
-  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.content-wrapper {
+.page-wrapper {
   width: 100%;
-  height: 100%;
   max-width: 1200px;
-  margin: 0 auto;
   padding: 20px;
-  background-color: white;
+  box-sizing: border-box;
+  background: white;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  word-break: break-word;
-  overflow-wrap: break-word;
-  white-space: normal;
-}
 
-.change-password-form {
-  max-width: 500px;
-  margin-top: 20px;
+  /* NEW */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .footer-banner {
@@ -241,7 +167,6 @@ const submitForm = () => {
   background-color: #d9ecff;
   text-align: center;
   margin-top: 0;
-  /* 🟢 取消顶部间距 */
 }
 
 .footer-image {

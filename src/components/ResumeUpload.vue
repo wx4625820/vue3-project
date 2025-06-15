@@ -1,44 +1,42 @@
 <template>
-  <div class="resume-wrapper">
-    <h2>简历上传</h2>
 
-    <div class="upload-header">
-      <el-upload :show-file-list="false" :before-upload="beforeUpload" :http-request="handleUpload">
-        <el-button type="primary">上传 PDF 简历</el-button>
-      </el-upload>
+  <h2>简历上传</h2>
 
-      <el-button circle class="icon-button" @click="dialogVisible = true">
-        <el-icon>
-          <FullScreen />
-        </el-icon>
-      </el-button>
-
-      <el-button circle class="icon-button danger" @click="resumeStore.clear()">
-        <el-icon>
-          <Delete />
-        </el-icon>
-      </el-button>
-    </div>
-
-    <el-input type="textarea" v-model="resumeText" placeholder="请输入或粘贴简历内容..." :rows="10" class="resume-textarea" />
-
-    <div style="text-align: right; margin-top: 10px">
-      <el-button type="primary" :loading="analyzing" @click="analyze">一键分析</el-button>
-    </div>
-
-    <div v-if="resultMarkdown" class="markdown-card">
-      <div class="markdown-body" v-html="renderedMarkdown" />
-    </div>
-
-    <div id="radar-chart" style="width: 100%; height: 400px; margin-top: 30px" v-if="showChart" />
-
-    <el-dialog v-model="dialogVisible" title="编辑简历内容" width="700px">
-      <el-input type="textarea" v-model="resumeText" :rows="20" style="width: 100%" />
-      <template #footer>
-        <el-button @click="dialogVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
+  <div class="upload-header">
+    <el-upload :show-file-list="false" :before-upload="beforeUpload" :http-request="handleUpload">
+      <el-button type="primary">上传 PDF 简历</el-button>
+    </el-upload>
+    <el-button circle class="icon-button" @click="dialogVisible = true">
+      <el-icon>
+        <FullScreen />
+      </el-icon>
+    </el-button>
+    <el-button circle class="icon-button danger" @click="resumeStore.clear()">
+      <el-icon>
+        <Delete />
+      </el-icon>
+    </el-button>
   </div>
+
+  <el-input type="textarea" v-model="resumeText" placeholder="请输入或粘贴简历内容..." :rows="10" class="resume-textarea" />
+
+  <div style="text-align: right; margin-top: 10px">
+    <el-button type="primary" :loading="analyzing" @click="analyze">一键分析</el-button>
+  </div>
+
+  <div v-if="resultMarkdown" class="markdown-card">
+    <div class="markdown-body" v-html="renderedMarkdown" />
+  </div>
+
+  <div id="radar-chart" style="width: 100%; height: 400px; margin-top: 30px" v-if="showChart" />
+
+  <el-dialog v-model="dialogVisible" title="编辑简历内容" width="700px">
+    <el-input type="textarea" v-model="resumeText" :rows="20" style="width: 100%" />
+    <template #footer>
+      <el-button @click="dialogVisible = false">关闭</el-button>
+    </template>
+  </el-dialog>
+
 </template>
 
 <script setup lang="ts">
@@ -93,10 +91,7 @@ const handleUpload = async (options: any) => {
         const page = await pdf.getPage(i)
         const content = await page.getTextContent()
         const rawText = content.items.map((item: any) => (typeof item.str === 'string' ? item.str.trim() : '')).join(' ')
-        const pageText = rawText
-          .replace(/([\u3002\uff01\uff1f!?])(?=[^\n])/g, '$1\n')
-          .replace(/([.!?])(?=\s+[A-Z])/g, '$1\n')
-          .replace(/(\s{2,})/g, '\n')
+        const pageText = rawText.replace(/([\u3002\uff01\uff1f!?])(?=[^\n])/g, '$1\n').replace(/([.!?])(?=\s+[A-Z])/g, '$1\n').replace(/(\s{2,})/g, '\n')
         text += pageText + '\n\n'
       }
       resumeText.value = text.trim()
@@ -214,11 +209,10 @@ const renderRadarChart = async () => {
 </script>
 
 <style scoped>
-.resume-wrapper {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 20px;
-  background-color: transparent;
+.resume-upload-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .upload-header {

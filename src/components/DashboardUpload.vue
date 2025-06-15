@@ -1,71 +1,71 @@
 <template>
-  <div class="dashboard-upload-wrapper">
-    <div class="header" v-if="!videoUrl">
-      <h2>模拟面试 - 视频上传</h2>
-      <div class="upload-section">
-        <el-upload :http-request="customUpload" :show-file-list="false" :before-upload="beforeUpload">
-          <el-button type="primary" :disabled="uploading">选择并上传视频</el-button>
-        </el-upload>
-      </div>
+
+  <div class="header" v-if="!videoUrl">
+    <h2>模拟面试 - 视频上传</h2>
+    <div class="upload-section">
+      <el-upload :http-request="customUpload" :show-file-list="false" :before-upload="beforeUpload">
+        <el-button type="primary" :disabled="uploading">选择并上传视频</el-button>
+      </el-upload>
     </div>
-
-    <el-progress v-if="uploading" :percentage="progress" :text-inside="true" :stroke-width="20" type="line"
-      status="active" color="#409EFF" :format="p => `${p.toFixed(1)}%`"
-      style="margin: 30px auto 0; width: 100%; max-width: 600px" />
-
-    <div v-if="showVideo && videoUrl" class="video-wrapper" :key="videoKey">
-      <div class="video-left">
-        <video :src="videoUrl" controls class="video-player" />
-        <div class="video-actions">
-          <el-select v-model="selectedRole" placeholder="请选择岗位" style="width: 160px">
-            <el-option label="技术岗" value="技术岗" />
-            <el-option label="运维岗" value="运维岗" />
-            <el-option label="测试岗" value="测试岗" />
-            <el-option label="产品岗" value="产品岗" />
-          </el-select>
-          <el-button type="primary" @click="analyzeVideo" :disabled="!selectedRole">一键分析</el-button>
-          <el-button type="danger" @click="deleteVideo">删除视频</el-button>
-        </div>
-      </div>
-
-      <div class="video-right">
-        <div class="dimension-explanation">
-          <div><span class="dim dim1">语言逻辑：</span> 评估语言是否清晰、有条理，表达是否连贯。</div>
-          <div><span class="dim dim2">情感语调：</span> 判断语音语调是否有情绪感染力，表达自然。</div>
-          <div><span class="dim dim3">专业知识水平：</span> 衡量答题中的专业性、准确性和深度。</div>
-          <div><span class="dim dim4">技能匹配度：</span> 回答是否贴合岗位技能要求，逻辑契合。</div>
-          <div><span class="dim dim5">眼神交流：</span> 是否有自然的视线交流，避免过多游离或低头。</div>
-          <div><span class="dim dim6">面部表情：</span> 表情是否自然、积极，有助于建立良好沟通。</div>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="showResultBox" class="analysis-result">
-      <div class="output-box">
-        <div class="stream-text">{{ streamResult }}</div>
-      </div>
-      <v-chart v-if="showChart" :option="radarOption" autoresize style="width: 100%; height: 400px; margin-top: 20px" />
-    </div>
-
-    <el-dialog v-model="showInitDialog" title="提示" width="300px" :close-on-click-modal="false" :show-close="false">
-      <div style="text-align: center">
-        <el-icon class="is-loading">
-          <Loading />
-        </el-icon>
-        <p style="margin-top: 10px">正在初始化上传，请耐心等待…</p>
-      </div>
-    </el-dialog>
-
-    <el-dialog v-model="showAnalyzingDialog" title="分析中..." width="300px" :close-on-click-modal="false"
-      :show-close="false">
-      <div style="text-align: center">
-        <el-icon class="is-loading">
-          <Loading />
-        </el-icon>
-        <p style="margin-top: 10px">正在分析视频，请耐心等待...</p>
-      </div>
-    </el-dialog>
   </div>
+
+  <el-progress v-if="uploading" :percentage="progress" :text-inside="true" :stroke-width="20" type="line"
+    status="active" color="#409EFF" :format="p => `${p.toFixed(1)}%`"
+    style="margin: 30px auto 0; width: 100%; max-width: 600px" />
+
+  <div v-if="showVideo && videoUrl" class="video-wrapper" :key="videoKey">
+    <div class="video-left">
+      <video :src="videoUrl" controls class="video-player" />
+      <div class="video-actions">
+        <el-select v-model="selectedRole" placeholder="请选择岗位" style="width: 160px">
+          <el-option label="技术岗" value="技术岗" />
+          <el-option label="运维岗" value="运维岗" />
+          <el-option label="测试岗" value="测试岗" />
+          <el-option label="产品岗" value="产品岗" />
+        </el-select>
+        <el-button type="primary" @click="analyzeVideo" :disabled="!selectedRole">一键分析</el-button>
+        <el-button type="danger" @click="deleteVideo">删除视频</el-button>
+      </div>
+    </div>
+
+    <div class="video-right">
+      <div class="dimension-explanation">
+        <div><span class="dim dim1">语言逻辑：</span> 评估语言是否清晰、有条理，表达是否连贯。</div>
+        <div><span class="dim dim2">情感语调：</span> 判断语音语调是否有情绪感染力，表达自然。</div>
+        <div><span class="dim dim3">专业知识水平：</span> 衡量答题中的专业性、准确性和深度。</div>
+        <div><span class="dim dim4">技能匹配度：</span> 回答是否贴合岗位技能要求，逻辑契合。</div>
+        <div><span class="dim dim5">眼神交流：</span> 是否有自然的视线交流，避免过多游离或低头。</div>
+        <div><span class="dim dim6">面部表情：</span> 表情是否自然、积极，有助于建立良好沟通。</div>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="showResultBox" class="analysis-result">
+    <div class="output-box">
+      <div class="stream-text">{{ streamResult }}</div>
+    </div>
+    <v-chart v-if="showChart" :option="radarOption" autoresize style="width: 100%; height: 400px; margin-top: 20px" />
+  </div>
+
+  <el-dialog v-model="showInitDialog" title="提示" width="300px" :close-on-click-modal="false" :show-close="false">
+    <div style="text-align: center">
+      <el-icon class="is-loading">
+        <Loading />
+      </el-icon>
+      <p style="margin-top: 10px">正在初始化上传，请耐心等待…</p>
+    </div>
+  </el-dialog>
+
+  <el-dialog v-model="showAnalyzingDialog" title="分析中..." width="300px" :close-on-click-modal="false"
+    :show-close="false">
+    <div style="text-align: center">
+      <el-icon class="is-loading">
+        <Loading />
+      </el-icon>
+      <p style="margin-top: 10px">正在分析视频，请耐心等待...</p>
+    </div>
+  </el-dialog>
+
 </template>
 
 <script setup lang="ts">

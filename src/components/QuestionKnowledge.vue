@@ -18,6 +18,7 @@
       <v-md-preview :text="answer" />
     </div>
   </div>
+
 </template>
 
 <script setup lang="ts">
@@ -101,11 +102,17 @@ const clearAll = () => {
 </script>
 
 <style scoped>
-.question-wrapper {
-  max-width: 900px;
+.content-wrapper {
+  max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-  background-color: transparent;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.question-wrapper {
+  width: 100%;
 }
 
 .question-input {
