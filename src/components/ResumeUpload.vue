@@ -302,4 +302,12 @@ const renderRadarChart = async () => {
   padding: 0 1em;
   margin: 0 0 16px 0;
 }
+
+.markdown-body :deep(hr) {
+  border: none;
+  height: 0;
+  background-color: transparent;
+  margin: 0;
+  padding: 0;
+}
 </style>
