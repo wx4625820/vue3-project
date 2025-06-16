@@ -1,71 +1,73 @@
 <template>
-
-  <div class="header" v-if="!videoUrl">
-    <h2>模拟面试 - 视频上传</h2>
-    <div class="upload-section">
-      <el-upload :http-request="customUpload" :show-file-list="false" :before-upload="beforeUpload">
-        <el-button type="primary" :disabled="uploading">选择并上传视频</el-button>
-      </el-upload>
-    </div>
-  </div>
-
-  <el-progress v-if="uploading" :percentage="progress" :text-inside="true" :stroke-width="20" type="line"
-    status="active" color="#409EFF" :format="p => `${p.toFixed(1)}%`"
-    style="margin: 30px auto 0; width: 100%; max-width: 600px" />
-
-  <div v-if="showVideo && videoUrl" class="video-wrapper" :key="videoKey">
-    <div class="video-left">
-      <video :src="videoUrl" controls class="video-player" />
-      <div class="video-actions">
-        <el-select v-model="selectedRole" placeholder="请选择岗位" style="width: 160px">
-          <el-option label="技术岗" value="技术岗" />
-          <el-option label="运维岗" value="运维岗" />
-          <el-option label="测试岗" value="测试岗" />
-          <el-option label="产品岗" value="产品岗" />
-        </el-select>
-        <el-button type="primary" @click="analyzeVideo" :disabled="!selectedRole">一键分析</el-button>
-        <el-button type="danger" @click="deleteVideo">删除视频</el-button>
+  <div class="dashboard-upload-wrapper">
+    <div class="header" v-if="!videoUrl">
+      <div class="header-row">
+        <h2>模拟面试 - 视频上传</h2>
+        <div class="upload-section">
+          <el-upload :http-request="customUpload" :show-file-list="false" :before-upload="beforeUpload">
+            <el-button type="primary" :disabled="uploading">选择并上传视频</el-button>
+          </el-upload>
+        </div>
       </div>
     </div>
 
-    <div class="video-right">
-      <div class="dimension-explanation">
-        <div><span class="dim dim1">语言逻辑：</span> 评估语言是否清晰、有条理，表达是否连贯。</div>
-        <div><span class="dim dim2">情感语调：</span> 判断语音语调是否有情绪感染力，表达自然。</div>
-        <div><span class="dim dim3">专业知识水平：</span> 衡量答题中的专业性、准确性和深度。</div>
-        <div><span class="dim dim4">技能匹配度：</span> 回答是否贴合岗位技能要求，逻辑契合。</div>
-        <div><span class="dim dim5">眼神交流：</span> 是否有自然的视线交流，避免过多游离或低头。</div>
-        <div><span class="dim dim6">面部表情：</span> 表情是否自然、积极，有助于建立良好沟通。</div>
+    <el-progress v-if="uploading" :percentage="progress" :text-inside="true" :stroke-width="20" type="line"
+      status="active" color="#409EFF" :format="p => `${p.toFixed(1)}%`"
+      style="margin: 30px auto 0; width: 100%; max-width: 600px" />
+
+    <div v-if="showVideo && videoUrl" class="video-wrapper" :key="videoKey">
+      <div class="video-left">
+        <video :src="videoUrl" controls class="video-player" />
+        <div class="video-actions">
+          <el-select v-model="selectedRole" placeholder="请选择岗位" style="width: 160px">
+            <el-option label="技术岗" value="技术岗" />
+            <el-option label="运维岗" value="运维岗" />
+            <el-option label="测试岗" value="测试岗" />
+            <el-option label="产品岗" value="产品岗" />
+          </el-select>
+          <el-button type="primary" @click="analyzeVideo" :disabled="!selectedRole">一键分析</el-button>
+          <el-button type="danger" @click="deleteVideo">删除视频</el-button>
+        </div>
+      </div>
+
+      <div class="video-right">
+        <div class="dimension-explanation">
+          <div><span class="dim">语言逻辑：</span>评估语言是否清晰、有条理，表达是否连贯。</div>
+          <div><span class="dim">情感语调：</span>判断语音语调是否有情绪感染力，表达自然。</div>
+          <div><span class="dim">专业知识水平：</span>衡量答题中的专业性、准确性和深度。</div>
+          <div><span class="dim">技能匹配度：</span>回答是否贴合岗位技能要求，逻辑契合。</div>
+          <div><span class="dim">眼神交流：</span>是否有自然的视线交流，避免过多游离或低头。</div>
+          <div><span class="dim">面部表情：</span>表情是否自然、积极，有助于建立良好沟通。</div>
+        </div>
       </div>
     </div>
+
+    <div v-if="showResultBox" class="analysis-result">
+      <div class="output-box">
+        <div class="stream-text">{{ streamResult }}</div>
+      </div>
+      <v-chart v-if="showChart" :option="radarOption" autoresize style="width: 100%; height: 400px; margin-top: 20px" />
+    </div>
+
+    <el-dialog v-model="showInitDialog" title="提示" width="300px" :close-on-click-modal="false" :show-close="false">
+      <div style="text-align: center">
+        <el-icon class="is-loading">
+          <Loading />
+        </el-icon>
+        <p style="margin-top: 10px">正在初始化上传，请耐心等待…</p>
+      </div>
+    </el-dialog>
+
+    <el-dialog v-model="showAnalyzingDialog" title="分析中..." width="300px" :close-on-click-modal="false"
+      :show-close="false">
+      <div style="text-align: center">
+        <el-icon class="is-loading">
+          <Loading />
+        </el-icon>
+        <p style="margin-top: 10px">正在分析视频，请耐心等待...</p>
+      </div>
+    </el-dialog>
   </div>
-
-  <div v-if="showResultBox" class="analysis-result">
-    <div class="output-box">
-      <div class="stream-text">{{ streamResult }}</div>
-    </div>
-    <v-chart v-if="showChart" :option="radarOption" autoresize style="width: 100%; height: 400px; margin-top: 20px" />
-  </div>
-
-  <el-dialog v-model="showInitDialog" title="提示" width="300px" :close-on-click-modal="false" :show-close="false">
-    <div style="text-align: center">
-      <el-icon class="is-loading">
-        <Loading />
-      </el-icon>
-      <p style="margin-top: 10px">正在初始化上传，请耐心等待…</p>
-    </div>
-  </el-dialog>
-
-  <el-dialog v-model="showAnalyzingDialog" title="分析中..." width="300px" :close-on-click-modal="false"
-    :show-close="false">
-    <div style="text-align: center">
-      <el-icon class="is-loading">
-        <Loading />
-      </el-icon>
-      <p style="margin-top: 10px">正在分析视频，请耐心等待...</p>
-    </div>
-  </el-dialog>
-
 </template>
 
 <script setup lang="ts">
@@ -261,6 +263,23 @@ const analyzeVideo = async () => {
   margin: 0 auto;
 }
 
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.header-row h2 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.upload-section {
+  display: flex;
+  align-items: center;
+}
+
 .video-wrapper {
   display: flex;
   flex-wrap: wrap;
@@ -275,6 +294,11 @@ const analyzeVideo = async () => {
   flex: 1 1 500px;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+.video-right {
+  align-self: flex-start;
+  margin-top: -10px;
 }
 
 .video-player {
@@ -295,35 +319,20 @@ const analyzeVideo = async () => {
   line-height: 1.8;
   text-align: left;
   word-break: break-word;
+
+  /* 新增位移样式 */
+  margin-left: 44px;
+  /* 右移 */
+  margin-top: 68px;
+  /* 下移 */
 }
 
 .dim {
-  font-weight: bold;
-  margin-right: 4px;
-}
-
-.dim1 {
-  color: #409EFF;
-}
-
-.dim2 {
-  color: #E6A23C;
-}
-
-.dim3 {
-  color: #67C23A;
-}
-
-.dim4 {
-  color: #F56C6C;
-}
-
-.dim5 {
-  color: #909399;
-}
-
-.dim6 {
-  color: #8A2BE2;
+  font-weight: 600;
+  margin-right: 6px;
+  color: #2c3e50;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 16px;
 }
 
 .analysis-result {

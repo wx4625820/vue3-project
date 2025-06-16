@@ -1,46 +1,46 @@
 <template>
+  <div class="resume-upload-wrapper">
+    <h2>简历上传</h2>
 
-  <h2>简历上传</h2>
+    <div class="upload-header">
+      <el-upload :show-file-list="false" :before-upload="beforeUpload" :http-request="handleUpload">
+        <el-button type="primary">上传 PDF 简历</el-button>
+      </el-upload>
+      <el-button circle class="icon-button" @click="dialogVisible = true">
+        <el-icon>
+          <FullScreen />
+        </el-icon>
+      </el-button>
+      <el-button circle class="icon-button danger" @click="resumeStore.clear()">
+        <el-icon>
+          <Delete />
+        </el-icon>
+      </el-button>
+    </div>
 
-  <div class="upload-header">
-    <el-upload :show-file-list="false" :before-upload="beforeUpload" :http-request="handleUpload">
-      <el-button type="primary">上传 PDF 简历</el-button>
-    </el-upload>
-    <el-button circle class="icon-button" @click="dialogVisible = true">
-      <el-icon>
-        <FullScreen />
-      </el-icon>
-    </el-button>
-    <el-button circle class="icon-button danger" @click="resumeStore.clear()">
-      <el-icon>
-        <Delete />
-      </el-icon>
-    </el-button>
+    <el-input type="textarea" v-model="resumeText" placeholder="请输入或粘贴简历内容..." :rows="10" class="resume-textarea" />
+
+    <div style="text-align: right; margin-top: 10px">
+      <el-button type="primary" :loading="analyzing" @click="analyze">一键分析</el-button>
+    </div>
+
+    <el-card v-if="resultMarkdown" style="margin-top: 20px">
+      <div class="markdown-body" v-html="renderedMarkdown" />
+    </el-card>
+
+    <div id="radar-chart" style="width: 100%; height: 400px; margin-top: 30px" v-if="showChart" />
+
+    <el-dialog v-model="dialogVisible" title="编辑简历内容" width="700px">
+      <el-input type="textarea" v-model="resumeText" :rows="20" style="width: 100%" />
+      <template #footer>
+        <el-button @click="dialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
-
-  <el-input type="textarea" v-model="resumeText" placeholder="请输入或粘贴简历内容..." :rows="10" class="resume-textarea" />
-
-  <div style="text-align: right; margin-top: 10px">
-    <el-button type="primary" :loading="analyzing" @click="analyze">一键分析</el-button>
-  </div>
-
-  <div v-if="resultMarkdown" class="markdown-card">
-    <div class="markdown-body" v-html="renderedMarkdown" />
-  </div>
-
-  <div id="radar-chart" style="width: 100%; height: 400px; margin-top: 30px" v-if="showChart" />
-
-  <el-dialog v-model="dialogVisible" title="编辑简历内容" width="700px">
-    <el-input type="textarea" v-model="resumeText" :rows="20" style="width: 100%" />
-    <template #footer>
-      <el-button @click="dialogVisible = false">关闭</el-button>
-    </template>
-  </el-dialog>
-
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { FullScreen, Delete } from '@element-plus/icons-vue'
 import * as pdfjsLib from 'pdfjs-dist'
@@ -48,12 +48,22 @@ import * as echarts from 'echarts'
 import { marked } from 'marked'
 import { useResumeStore } from '@/stores/resumeStore'
 
+// 配置 marked
+marked.setOptions({
+  highlight: (code) => {
+    return code
+  },
+  gfm: true,
+  breaks: true,
+  renderer: new marked.Renderer()
+})
+
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
 
 const resumeStore = useResumeStore()
 const resumeText = computed({
   get: () => resumeStore.text,
-  set: val => resumeStore.setText(val),
+  set: (val) => resumeStore.setText(val),
 })
 
 const dialogVisible = ref(false)
@@ -91,7 +101,10 @@ const handleUpload = async (options: any) => {
         const page = await pdf.getPage(i)
         const content = await page.getTextContent()
         const rawText = content.items.map((item: any) => (typeof item.str === 'string' ? item.str.trim() : '')).join(' ')
-        const pageText = rawText.replace(/([\u3002\uff01\uff1f!?])(?=[^\n])/g, '$1\n').replace(/([.!?])(?=\s+[A-Z])/g, '$1\n').replace(/(\s{2,})/g, '\n')
+        const pageText = rawText
+          .replace(/([\u3002\uff01\uff1f!?])(?=[^\n])/g, '$1\n')
+          .replace(/([.!?])(?=\s+[A-Z])/g, '$1\n')
+          .replace(/(\s{2,})/g, '\n')
         text += pageText + '\n\n'
       }
       resumeText.value = text.trim()
@@ -145,13 +158,13 @@ const analyze = async () => {
           resultMarkdown.value += char
           counter++
           if (counter % 10 === 0) {
-            renderedMarkdown.value = await marked(resultMarkdown.value) as string
+            renderedMarkdown.value = await marked(resultMarkdown.value)
           }
           await new Promise(resolve => setTimeout(resolve, 20))
         }
       }
     }
-    renderedMarkdown.value = await marked(resultMarkdown.value) as string
+    renderedMarkdown.value = await marked(resultMarkdown.value)
     pushing = false
   }
 
@@ -172,7 +185,7 @@ const analyze = async () => {
 
 const extractScores = () => {
   const markdown = resultMarkdown.value
-  const dimensions = Object.keys(dimensionScores.value)
+  const dimensions = ['基础信息', '教育背景', '工作经历', '专业技能', '行业对比']
   dimensions.forEach((dim) => {
     const regex = new RegExp(`##\\s*${dim}[\\s\\S]*?-\\s*\\*\\*评分\\*\\*[:：]\\s*(\\d{1,3})`)
     const match = markdown.match(regex)
@@ -213,6 +226,7 @@ const renderRadarChart = async () => {
   flex: 1;
   display: flex;
   flex-direction: column;
+  padding: 20px;
 }
 
 .upload-header {
@@ -234,18 +248,58 @@ const renderRadarChart = async () => {
 
 .resume-textarea {
   width: 100%;
-}
-
-.markdown-card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 16px;
-  margin-top: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  margin-bottom: 20px;
 }
 
 .markdown-body {
   font-size: 14px;
   line-height: 1.6;
+  color: #333;
+  background-color: transparent;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.markdown-body :deep(pre) {
+  background-color: #f8f8f8 !important;
+  color: #333 !important;
+  padding: 12px;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  border: 1px solid #eaeaea;
+  margin: 10px 0;
+}
+
+.markdown-body :deep(code) {
+  background-color: transparent !important;
+  color: inherit !important;
+  padding: 0 !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  border: none !important;
+}
+
+.markdown-body :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  border: 1px solid #eaeaea;
+}
+
+.markdown-body :deep(th),
+.markdown-body :deep(td) {
+  border: 1px solid #eaeaea;
+  padding: 8px;
+  text-align: left;
+}
+
+.markdown-body :deep(blockquote) {
+  border-left: 4px solid #dfe2e5;
+  color: #6a737d;
+  padding: 0 1em;
+  margin: 0 0 16px 0;
 }
 </style>

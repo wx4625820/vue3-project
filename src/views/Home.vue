@@ -9,6 +9,7 @@
             <el-menu-item index="dashboard">模拟面试</el-menu-item>
             <el-menu-item index="interviews">简历分析</el-menu-item>
             <el-menu-item index="questions">知识库</el-menu-item>
+            <el-menu-item index="upload">上传知识库</el-menu-item>
             <el-menu-item index="settings">设置</el-menu-item>
           </el-menu>
         </div>
@@ -32,6 +33,7 @@
         <DashboardUpload v-if="activeMenu === 'dashboard'" />
         <ResumeUpload v-else-if="activeMenu === 'interviews'" />
         <QuestionKnowledge v-else-if="activeMenu === 'questions'" />
+        <KnowledgeUpload v-else-if="activeMenu === 'upload'" />
         <SettingsPanel v-else-if="activeMenu === 'settings'" />
       </div>
     </div>
@@ -50,6 +52,7 @@ import { useRouter } from 'vue-router'
 import DashboardUpload from '@/components/DashboardUpload.vue'
 import ResumeUpload from '@/components/ResumeUpload.vue'
 import QuestionKnowledge from '@/components/QuestionKnowledge.vue'
+import KnowledgeUpload from '@/components/KnowledgeUpload.vue'
 import SettingsPanel from '@/components/SettingsPanel.vue'
 import UsageCounter from '@/components/UsageCounter.vue'
 
