@@ -1,8 +1,9 @@
 <template>
   <div class="dashboard-upload-wrapper">
+    <h2>模拟面试 - 视频上传</h2>
     <div class="header" v-if="!videoUrl">
       <div class="header-row">
-        <h2>模拟面试 - 视频上传</h2>
+
         <div class="upload-section">
           <el-upload :http-request="customUpload" :show-file-list="false" :before-upload="beforeUpload">
             <el-button type="primary" :disabled="uploading">选择并上传视频</el-button>
@@ -258,9 +259,10 @@ const analyzeVideo = async () => {
 
 <style scoped>
 .dashboard-upload-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
 .header-row {
