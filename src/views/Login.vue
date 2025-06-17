@@ -3,13 +3,7 @@
     <div class="card">
       <h2>登录系统</h2>
 
-      <el-form
-        :model="loginForm"
-        :rules="rules"
-        ref="loginFormRef"
-        label-width="80px"
-        class="form"
-      >
+      <el-form :model="loginForm" :rules="rules" ref="loginFormRef" label-width="80px" class="form">
         <el-form-item label="邮箱" prop="email">
           <el-input v-model="loginForm.email" placeholder="请输入邮箱" />
         </el-form-item>
@@ -92,6 +86,7 @@ const goToForgot = () => {
   height: 100vh;
   background: linear-gradient(135deg, #e6f0ff, #cfe0f5);
   font-family: 'Georgia', serif;
+  background-color: #d9ecff;
 }
 
 .card {
