@@ -1,7 +1,9 @@
 <template>
   <div class="question-wrapper">
-    <h2>提问</h2>
-
+    <h2>知识库</h2>
+    <div class="card-tip">
+      qwen3 也可能会犯错，请核查重要信息。
+    </div>
     <!-- 输入框 -->
     <el-input v-model="question" placeholder="请输入你的问题，例如：Vue 的响应式原理是怎样的？" type="textarea" :rows="4"
       class="question-input" :disabled="typing" />
@@ -138,5 +140,15 @@ const clearAll = () => {
   border-radius: 6px;
   padding: 10px;
   overflow: auto;
+}
+
+.card-tip {
+  background-color: #eef6ff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  text-align: left;
+  color: #333;
+  font-size: 14px;
+  line-height: 1.6;
 }
 </style>

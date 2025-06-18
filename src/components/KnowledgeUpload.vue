@@ -1,7 +1,9 @@
 <template>
     <div class="upload-wrapper">
-        <h2>上传知识库（仅支持 PDF）</h2>
-
+        <h2>上传知识库</h2>
+        <div class="card-tip">
+            Weaviate RAG：智能向量检索+大模型问答，精准高效。
+        </div>
         <el-upload class="upload-section" :http-request="handleCustomUpload" :show-file-list="true"
             :before-upload="beforeUpload" :on-success="handleSuccess" :on-error="handleError" accept=".pdf">
             <el-button type="primary">选择并上传 PDF 文件</el-button>
@@ -74,5 +76,15 @@ const handleError = (err: any) => {
 
 .upload-section {
     margin-top: 20px;
+}
+
+.card-tip {
+    background-color: #eef6ff;
+    padding: 12px 20px;
+    border-radius: 10px;
+    text-align: left;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.6;
 }
 </style>

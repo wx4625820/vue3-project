@@ -1,6 +1,6 @@
 <template>
   <div class="resume-upload-wrapper">
-    <h2>简历上传</h2>
+    <h2>简历分析</h2>
 
     <div class="upload-header">
       <el-upload :show-file-list="false" :before-upload="beforeUpload" :http-request="handleUpload">
@@ -17,6 +17,26 @@
         </el-icon>
       </el-button>
     </div>
+
+
+    <div class="contains-wrapper">
+      <span class="contains">报告包含：</span> 基础信息、教育背景、工作经历、专业技能、行业对比
+    </div>
+
+
+    <!-- 分析维度卡片展示 -->
+    <div class="card-wrapper">
+      <div class="card-item" v-for="item in cardList" :key="item.index">
+        <span class="card-index">{{ item.index }}</span>
+        <span class="card-title">{{ item.title }}</span>
+      </div>
+    </div>
+
+    <!-- 分析提示信息 -->
+    <div class="card-tip">
+      基于讯飞星火X1大语言模型，分析报告生成约需1分钟，预计消耗500token，中途请不要退出。
+    </div>
+
 
     <el-input type="textarea" v-model="resumeText" placeholder="请输入或粘贴简历内容..." :rows="10" class="resume-textarea" />
 
@@ -47,6 +67,15 @@ import * as pdfjsLib from 'pdfjs-dist'
 import * as echarts from 'echarts'
 import { marked } from 'marked'
 import { useResumeStore } from '@/stores/resumeStore'
+
+const cardList = [
+  { index: '一、', title: '基础信息' },
+  { index: '二、', title: '教育背景' },
+  { index: '三、', title: '工作经历' },
+  { index: '四、', title: '专业技能' },
+  { index: '五、', title: '行业对比' }
+]
+
 
 // 配置 marked
 marked.setOptions({
@@ -309,5 +338,49 @@ const renderRadarChart = async () => {
   background-color: transparent;
   margin: 0;
   padding: 0;
+}
+
+.card-wrapper {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.card-item {
+  background: #fafbfc;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  padding: 20px 24px;
+  min-width: 120px;
+  text-align: center;
+  font-size: 16px;
+  color: #333;
+}
+
+.card-index {
+  color: #409EFF;
+  font-weight: bold;
+  margin-right: 4px;
+}
+
+.card-title {
+  font-weight: 500;
+}
+
+.card-tip {
+  background-color: #eef6ff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  text-align: left;
+  color: #333;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.contains-wrapper {
+  text-align: center;
+  margin-top: 20px;
 }
 </style>

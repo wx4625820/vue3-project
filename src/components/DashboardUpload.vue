@@ -24,8 +24,7 @@
         <span class="card-title">{{ item.title }}</span>
       </div>
       <div class="card-description">
-        基于讯飞星火X1大语言模型，分析报告生成约需3分钟，预计消耗3000token，中途请不要退出。
-        大模型输出完毕后，才可导出报告为 PDF 或 Markdown 文件！
+        基于讯飞星火X1大语言模型，分析报告生成约需3分钟，预计消耗2500token，中途请不要退出。
       </div>
     </div>
 
@@ -93,6 +92,7 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '@/utils/request'
 import { Loading } from '@element-plus/icons-vue'
+import { marked } from 'marked'
 
 const uploading = ref(false)
 const progress = ref(0)
@@ -110,14 +110,14 @@ const radarData = ref([0, 0, 0, 0, 0, 0])
 
 const cardList = [
   { index: '一、', title: '语言逻辑' },
-  { index: '二、', title: '面试题预测' },
-  { index: '三、', title: '面部表情' },
-  { index: '四、', title: '眼神交流' },
-  { index: '五、', title: '技能匹配' },
-  { index: '六、', title: '专业知识' }
+  { index: '二、', title: '面部表情' },
+  { index: '三、', title: '眼神交流' },
+  { index: '四、', title: '技能匹配' },
+  { index: '五、', title: '专业知识' },
+  { index: '六、', title: '情感语调' }
 ]
 
-const radarIndicators = ['语言逻辑', '情感语调', '专业知识', '技能匹配', '眼神交流', '面部表情']
+const radarIndicators = ['语言逻辑', '面部表情', '眼神交流', '技能匹配', '专业知识', '情感语调']
 const radarOption = computed(() => ({
   title: { text: '综合能力分析', left: 'center', top: 10 },
   tooltip: {},
@@ -135,7 +135,7 @@ const radarOption = computed(() => ({
 
 function extractRadarScores(markdown: string): number[] {
   const scoreMap: Record<string, number> = {}
-  const regex = /([语言逻辑情感语调专业知识技能匹配眼神交流面部表情]{3,})[：:（(\s]*?(\d{2})\s*(?:\/100)?/g
+  const regex = /([语言逻辑面部表情眼神交流技能匹配专业知识]{3,})[：:（(\s]*?(\d{2})\s*(?:\/100)?/g
   let match: RegExpExecArray | null
   while ((match = regex.exec(markdown)) !== null) {
     const label = match[1].trim()
@@ -338,8 +338,11 @@ const analyzeVideo = async () => {
   padding: 16px;
   font-size: 14px;
   color: #333;
-  text-align: center;
+  text-align: left;
+  width: 1200px;
+  /* 设置固定宽度 */
   max-width: 100%;
+  /* 确保不超过父容器宽度 */
 }
 
 .header-row {
@@ -426,5 +429,23 @@ const analyzeVideo = async () => {
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: break-word;
+}
+
+.stream-text h1,
+.stream-text h2 {
+  font-weight: bold;
+  margin: 16px 0 8px;
+  border-bottom: 1px solid #eaecef;
+}
+
+.stream-text p {
+  margin: 10px 0;
+}
+
+.stream-text code {
+  background: #f2f2f2;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: monospace;
 }
 </style>
