@@ -1,14 +1,31 @@
 <template>
   <div class="dashboard-upload-wrapper">
-    <h2>模拟面试 - 视频上传</h2>
+    <h2>模拟面试</h2>
+
     <div class="header" v-if="!videoUrl">
       <div class="header-row">
-
         <div class="upload-section">
           <el-upload :http-request="customUpload" :show-file-list="false" :before-upload="beforeUpload">
             <el-button type="primary" :disabled="uploading">选择并上传视频</el-button>
           </el-upload>
         </div>
+      </div>
+    </div>
+
+    <!-- 提示：报告包含的内容，上传中或视频已存在则隐藏 -->
+    <div v-if="!videoUrl && !uploading" class="contains-wrapper">
+      <span class="contains">报告包含：</span> 语言逻辑、面部表情、眼神交流、技能匹配、专业知识、情感语调
+    </div>
+
+    <!-- 分析卡片区域：上传前显示，上传中或视频已存在则隐藏 -->
+    <div v-if="!videoUrl && !uploading" class="analysis-card-section">
+      <div class="card" v-for="(item, index) in cardList" :key="index">
+        <span class="card-index">{{ item.index }}</span>
+        <span class="card-title">{{ item.title }}</span>
+      </div>
+      <div class="card-description">
+        基于讯飞星火X1大语言模型，分析报告生成约需3分钟，预计消耗3000token，中途请不要退出。
+        大模型输出完毕后，才可导出报告为 PDF 或 Markdown 文件！
       </div>
     </div>
 
@@ -33,12 +50,12 @@
 
       <div class="video-right">
         <div class="dimension-explanation">
-          <div><span class="dim">语言逻辑：</span>评估语言是否清晰、有条理，表达是否连贯。</div>
-          <div><span class="dim">情感语调：</span>判断语音语调是否有情绪感染力，表达自然。</div>
-          <div><span class="dim">专业知识水平：</span>衡量答题中的专业性、准确性和深度。</div>
-          <div><span class="dim">技能匹配度：</span>回答是否贴合岗位技能要求，逻辑契合。</div>
-          <div><span class="dim">眼神交流：</span>是否有自然的视线交流，避免过多游离或低头。</div>
-          <div><span class="dim">面部表情：</span>表情是否自然、积极，有助于建立良好沟通。</div>
+          <div><span class="dim">语言逻辑：</span>表达是否清晰、有条理。</div>
+          <div><span class="dim">面部表情：</span>表情自然积极，传递情绪。</div>
+          <div><span class="dim">眼神交流：</span>视线是否稳定、自然交流。</div>
+          <div><span class="dim">技能匹配：</span>回答是否符合岗位要求。</div>
+          <div><span class="dim">专业知识：</span>答题是否准确、有深度。</div>
+          <div><span class="dim">情感语调：</span>语气自然，有感染力。</div>
         </div>
       </div>
     </div>
@@ -90,6 +107,15 @@ const showChart = ref(false)
 const showResultBox = ref(false)
 const streamResult = ref('')
 const radarData = ref([0, 0, 0, 0, 0, 0])
+
+const cardList = [
+  { index: '一、', title: '语言逻辑' },
+  { index: '二、', title: '面试题预测' },
+  { index: '三、', title: '面部表情' },
+  { index: '四、', title: '眼神交流' },
+  { index: '五、', title: '技能匹配' },
+  { index: '六、', title: '专业知识' }
+]
 
 const radarIndicators = ['语言逻辑', '情感语调', '专业知识', '技能匹配', '眼神交流', '面部表情']
 const radarOption = computed(() => ({
@@ -265,16 +291,62 @@ const analyzeVideo = async () => {
   padding: 20px;
 }
 
+.contains-wrapper {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.contains {
+  font-weight: 600;
+  margin-right: 6px;
+  color: #2c3e50;
+}
+
+.analysis-card-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin: 30px 0 20px;
+  padding: 10px;
+  background: #fff;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  background: #f8f9fb;
+  padding: 14px 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  font-size: 18px;
+  font-weight: 500;
+  color: #333;
+  transition: all 0.3s ease;
+}
+
+.card-index {
+  color: #409EFF;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.card-description {
+  margin-top: 20px;
+  background-color: #f0f7ff;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 14px;
+  color: #333;
+  text-align: center;
+  max-width: 100%;
+}
+
 .header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-}
-
-.header-row h2 {
-  font-size: 20px;
-  margin: 0;
 }
 
 .upload-section {
@@ -321,20 +393,14 @@ const analyzeVideo = async () => {
   line-height: 1.8;
   text-align: left;
   word-break: break-word;
-
-  /* 新增位移样式 */
   margin-left: 44px;
-  /* 右移 */
   margin-top: 68px;
-  /* 下移 */
 }
 
 .dim {
   font-weight: 600;
   margin-right: 6px;
   color: #2c3e50;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 16px;
 }
 
 .analysis-result {
