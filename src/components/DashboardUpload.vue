@@ -61,7 +61,7 @@
 
     <div v-if="showResultBox" class="analysis-result">
       <div class="output-box">
-        <div class="stream-text">{{ streamResult }}</div>
+        <div class="stream-text" v-html="renderedMarkdown"></div>
       </div>
       <v-chart v-if="showChart" :option="radarOption" autoresize style="width: 100%; height: 400px; margin-top: 20px" />
     </div>
@@ -88,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watchEffect } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '@/utils/request'
 import { Loading } from '@element-plus/icons-vue'
@@ -107,6 +107,12 @@ const showChart = ref(false)
 const showResultBox = ref(false)
 const streamResult = ref('')
 const radarData = ref([0, 0, 0, 0, 0, 0])
+const renderedMarkdown = ref('')
+
+watchEffect(() => {
+  renderedMarkdown.value = marked.parse(streamResult.value)
+})
+
 
 const cardList = [
   { index: '一、', title: '语言逻辑' },
@@ -244,43 +250,70 @@ const deleteVideo = async () => {
 
 const analyzeVideo = async () => {
   if (!selectedRole.value || !videoUrl.value) return
+
   streamResult.value = ''
   showChart.value = false
   showResultBox.value = false
   showAnalyzingDialog.value = true
+
   try {
     const response = await fetch('/rag/analyze-video', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: videoUrl.value })
     })
+
     if (!response.body) {
       ElMessage.error('后端未返回内容')
       showAnalyzingDialog.value = false
       return
     }
+
     const reader = response.body.getReader()
     const decoder = new TextDecoder('utf-8')
     let done = false
+
+    let renderTimer: number | null = null
+
     while (!done) {
       const { value, done: doneReading } = await reader.read()
       done = doneReading
       if (value) {
         const chunk = decoder.decode(value, { stream: true })
         streamResult.value += chunk
+
         if (!showResultBox.value) showResultBox.value = true
         if (showAnalyzingDialog.value) showAnalyzingDialog.value = false
+
+        // ✅ 实时解析 markdown（不匹配代码块，直接全量渲染）
+        if (renderTimer) clearTimeout(renderTimer)
+        renderTimer = window.setTimeout(() => {
+          renderedMarkdown.value = marked.parse(streamResult.value)
+        }, 80)
+
         await nextTick()
       }
     }
-    radarData.value = extractRadarScores(streamResult.value)
+
+    // ✅ 流式结束后，提取 markdown 代码块用于干净的评分提取
+    const match = streamResult.value.match(/```markdown\s*([\s\S]*?)```/)
+    const pureMarkdown = match ? match[1].trim() : streamResult.value
+
+    // ✅ 更新最终展示用 markdown
+    renderedMarkdown.value = marked.parse(pureMarkdown)
+
+    // ✅ 提取评分并更新雷达图
+    radarData.value = extractRadarScores(pureMarkdown)
     showChart.value = true
+
   } catch (err) {
     console.error('analyzeVideo error:', err)
     ElMessage.error('分析失败，请稍后再试')
     showAnalyzingDialog.value = false
   }
 }
+
+
 </script>
 
 <style scoped>
