@@ -151,4 +151,15 @@ const clearAll = () => {
   font-size: 14px;
   line-height: 1.6;
 }
+
+.question-actions :deep(.el-button) {
+  height: 40px;
+  min-width: 120px;
+  padding: 0 20px;
+  box-sizing: border-box;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 </style>

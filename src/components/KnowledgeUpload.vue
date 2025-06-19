@@ -6,7 +6,7 @@
         </div>
         <el-upload class="upload-section" :http-request="handleCustomUpload" :show-file-list="true"
             :before-upload="beforeUpload" :on-success="handleSuccess" :on-error="handleError" accept=".pdf">
-            <el-button type="primary">选择并上传 PDF 文件</el-button>
+            <el-button class="teal-button">选择并上传 PDF 文件</el-button>
         </el-upload>
     </div>
 </template>
@@ -86,5 +86,34 @@ const handleError = (err: any) => {
     color: #333;
     font-size: 14px;
     line-height: 1.6;
+}
+
+.teal-button {
+    background-color: #3F51B5;
+    color: #fff;
+    border-color: #3F51B5;
+}
+
+.teal-button:hover {
+    background-color: #5C6BC0;
+    border-color: #5C6BC0;
+}
+
+.teal-button:disabled {
+    background-color: #C5CAE9;
+    border-color: #C5CAE9;
+    color: #f2f2f2;
+    cursor: not-allowed;
+}
+
+.upload-section :deep(.el-button) {
+    min-width: 120px;
+    height: 40px;
+    padding: 0 20px;
+    box-sizing: border-box;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 </style>

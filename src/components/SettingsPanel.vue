@@ -83,4 +83,15 @@ const submitForm = () => {
     max-width: 500px;
     margin-top: 20px;
 }
+
+.change-password-form :deep(.el-button) {
+    min-width: 120px;
+    height: 40px;
+    padding: 0 20px;
+    font-size: 14px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
 </style>

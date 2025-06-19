@@ -2,21 +2,19 @@
   <div class="resume-upload-wrapper">
     <h2>简历分析</h2>
 
-    <div class="upload-header">
+    <div class="button-wrapper">
       <el-upload :show-file-list="false" :before-upload="beforeUpload" :http-request="handleUpload">
-        <el-button type="primary">上传 PDF 简历</el-button>
+        <el-button class="teal-button">上传 PDF 简历</el-button>
       </el-upload>
-      <el-button circle class="icon-button" @click="dialogVisible = true">
-        <el-icon>
-          <FullScreen />
-        </el-icon>
-      </el-button>
-      <el-button circle class="icon-button danger" @click="resumeStore.clear()">
-        <el-icon>
-          <Delete />
-        </el-icon>
-      </el-button>
+
+      <el-button type="primary" :loading="analyzing" @click="analyze">一键分析</el-button>
+      <el-button class="edit-button" @click="dialogVisible = true">编辑</el-button>
+      <el-button type="danger" @click="resumeStore.clear()">删除简历</el-button>
+      <el-button class="export-button" v-if="showExportButton" @click="exportPdf">导出报告</el-button>
+
     </div>
+
+
 
 
     <div class="contains-wrapper">
@@ -39,17 +37,10 @@
 
 
     <el-input type="textarea" v-model="resumeText" placeholder="请输入或粘贴简历内容..." :rows="10" class="resume-textarea" />
-
-    <div style="text-align: right; margin-top: 10px">
-      <el-button type="primary" :loading="analyzing" @click="analyze">一键分析</el-button>
-    </div>
-
     <el-card v-if="resultMarkdown" style="margin-top: 20px">
       <div class="markdown-body" v-html="renderedMarkdown" />
     </el-card>
-
-    <div id="radar-chart" style="width: 100%; height: 400px; margin-top: 30px" v-if="showChart" />
-
+    <div id="radar-chart" style="width: 100%; height: 400px; margin-top: 30px" v-if="showChart"></div>
     <el-dialog v-model="dialogVisible" title="编辑简历内容" width="700px">
       <el-input type="textarea" v-model="resumeText" :rows="20" style="width: 100%" />
       <template #footer>
@@ -67,6 +58,7 @@ import * as pdfjsLib from 'pdfjs-dist'
 import * as echarts from 'echarts'
 import { marked } from 'marked'
 import { useResumeStore } from '@/stores/resumeStore'
+import html2pdf from 'html2pdf.js'
 
 const cardList = [
   { index: '一、', title: '基础信息' },
@@ -75,6 +67,62 @@ const cardList = [
   { index: '四、', title: '专业技能' },
   { index: '五、', title: '行业对比' }
 ]
+const showExportButton = ref(false)
+
+const exportPdf = async () => {
+  const chartDom = document.getElementById('radar-chart') as HTMLElement
+  const chart = echarts.getInstanceByDom(chartDom)
+  const chartImg = chart?.getDataURL({ pixelRatio: 2, backgroundColor: '#fff' })
+
+  if (!chartImg) {
+    ElMessage.warning('雷达图尚未加载，无法导出报告')
+    return
+  }
+
+  const markdownDiv = document.querySelector('.markdown-body')?.cloneNode(true) as HTMLElement
+  if (!markdownDiv) {
+    ElMessage.warning('报告内容为空，无法导出')
+    return
+  }
+
+  // 创建一个离屏容器，避免干扰主页面
+  const wrapper = document.createElement('div')
+  wrapper.style.padding = '20px'
+  wrapper.style.backgroundColor = '#fff'
+  wrapper.style.fontFamily = 'Arial, sans-serif'
+  wrapper.style.lineHeight = '1.6'
+  wrapper.style.fontSize = '14px'
+
+  // 添加 Markdown 内容
+  markdownDiv.style.marginBottom = '20px'
+  wrapper.appendChild(markdownDiv)
+
+  // 添加雷达图图片
+  const img = document.createElement('img')
+  img.src = chartImg
+  img.style.width = '100%'
+  img.style.marginTop = '20px'
+  wrapper.appendChild(img)
+
+  // 使用 detached div，不挂载页面
+  const container = document.createElement('div')
+  container.style.position = 'fixed'
+  container.style.top = '-9999px'
+  container.appendChild(wrapper)
+  document.body.appendChild(container)
+
+  await html2pdf().set({
+    margin: 0.5,
+    filename: `简历分析报告_${new Date().toISOString().slice(0, 10)}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+  }).from(wrapper).save()
+
+  document.body.removeChild(container)
+}
+
+
 
 
 // 配置 marked
@@ -158,59 +206,63 @@ const analyze = async () => {
   resultMarkdown.value = ''
   renderedMarkdown.value = ''
   showChart.value = false
+  showExportButton.value = false  // 清空按钮状态
 
-  const response = await fetch('/rag/analyze-resume', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content: resumeText.value }),
-  })
+  try {
+    const response = await fetch('/rag/analyze-resume', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: resumeText.value }),
+    })
 
-  if (!response.body) {
-    ElMessage.error('后端未返回内容')
-    analyzing.value = false
-    return
-  }
+    if (!response.body) {
+      ElMessage.error('后端未返回内容')
+      analyzing.value = false
+      return
+    }
 
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder('utf-8')
-  let queue: string[] = []
-  let pushing = false
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder('utf-8')
+    let done = false
+    let renderTimer: number | null = null
 
-  const pushCharByChar = async (): Promise<void> => {
-    if (pushing) return
-    pushing = true
-    let counter = 0
-    while (queue.length > 0) {
-      const nextChunk = queue.shift()
-      if (nextChunk) {
-        for (const char of nextChunk) {
-          resultMarkdown.value += char
-          counter++
-          if (counter % 10 === 0) {
-            renderedMarkdown.value = await marked(resultMarkdown.value)
-          }
-          await new Promise(resolve => setTimeout(resolve, 20))
-        }
+    while (!done) {
+      const { value, done: doneReading } = await reader.read()
+      done = doneReading
+      if (value) {
+        const chunk = decoder.decode(value, { stream: true })
+        resultMarkdown.value += chunk
+
+        if (renderTimer) clearTimeout(renderTimer)
+        renderTimer = window.setTimeout(() => {
+          const raw = resultMarkdown.value
+          const match = raw.match(/```markdown\s*([\s\S]*?)```/)
+          const pureMarkdown = match ? match[1].trim() : raw
+          renderedMarkdown.value = marked.parse(pureMarkdown)
+        }, 80)
+
+        await nextTick()
       }
     }
-    renderedMarkdown.value = await marked(resultMarkdown.value)
-    pushing = false
-  }
 
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    const chunk = decoder.decode(value, { stream: true })
-    queue.push(chunk)
-    await pushCharByChar()
-  }
+    resultMarkdown.value = resultMarkdown.value.replace(/```markdown\s*([\s\S]*?)```/, (_, content) => content.trim())
+    renderedMarkdown.value = marked.parse(resultMarkdown.value)
+    extractScores()
+    showChart.value = true
+    renderRadarChart()
 
-  await pushCharByChar()
-  extractScores()
-  showChart.value = true
-  renderRadarChart()
-  analyzing.value = false
+    // ✅ 显示“导出报告”按钮
+    showExportButton.value = true
+
+  } catch (err) {
+    console.error('analyze error:', err)
+    ElMessage.error('分析失败，请稍后再试')
+  } finally {
+    analyzing.value = false
+  }
 }
+
+
 
 const extractScores = () => {
   const markdown = resultMarkdown.value
@@ -224,11 +276,18 @@ const extractScores = () => {
   })
 }
 
+let myChart: echarts.ECharts | null = null
+
 const renderRadarChart = async () => {
   await nextTick()
   const chartDom = document.getElementById('radar-chart')
   if (!chartDom) return
-  const myChart = echarts.init(chartDom)
+
+  if (myChart) {
+    myChart.dispose() // 销毁旧图
+  }
+
+  myChart = echarts.init(chartDom)
   const option = {
     title: { text: '简历综合评分雷达图' },
     tooltip: {},
@@ -248,6 +307,7 @@ const renderRadarChart = async () => {
   }
   myChart.setOption(option)
 }
+
 </script>
 
 <style scoped>
@@ -256,13 +316,6 @@ const renderRadarChart = async () => {
   display: flex;
   flex-direction: column;
   padding: 20px;
-}
-
-.upload-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
 }
 
 .icon-button {
@@ -382,5 +435,110 @@ const renderRadarChart = async () => {
 .contains-wrapper {
   text-align: center;
   margin-top: 20px;
+}
+
+.teal-button {
+  background-color: #3F51B5;
+  color: #fff;
+  border-color: #3F51B5;
+}
+
+.teal-button:hover {
+  background-color: #5C6BC0;
+  /* 比原色稍浅一点，适合作为 hover */
+  border-color: #5C6BC0;
+}
+
+.teal-button:disabled {
+  background-color: #C5CAE9;
+  /* 浅蓝灰 */
+  border-color: #C5CAE9;
+  color: #f2f2f2;
+  cursor: not-allowed;
+}
+
+.button-wrapper {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  column-gap: 12px;
+  /* 只控制左右间距 */
+  row-gap: 12px;
+  margin-bottom: 20px;
+}
+
+
+.button-wrapper {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  column-gap: 12px;
+  /* 只控制左右间距 */
+  row-gap: 12px;
+  margin-bottom: 20px;
+}
+
+/* 所有按钮强制一致宽高 */
+.button-wrapper :deep(.el-button) {
+  min-width: 120px;
+  height: 40px;
+  padding: 0 20px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+/* upload 内部结构调整为按钮尺寸 */
+.button-wrapper :deep(.el-upload) {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0;
+  margin: 0;
+  /* 避免上传按钮比其他按钮多 margin */
+}
+
+
+.edit-button {
+  background-color: #4CAF50;
+  color: #fff;
+  border-color: #4CAF50;
+}
+
+.edit-button:hover {
+  background-color: #66BB6A;
+  /* hover 时稍浅的绿色 */
+  border-color: #66BB6A;
+}
+
+.edit-button:disabled {
+  background-color: #C8E6C9;
+  /* disabled 用浅绿灰色 */
+  border-color: #C8E6C9;
+  color: #f2f2f2;
+  cursor: not-allowed;
+}
+
+.export-button {
+  background-color: #9E9E9E;
+  /* 中性灰 */
+  color: #fff;
+  border-color: #9E9E9E;
+}
+
+.export-button:hover {
+  background-color: #BDBDBD;
+  /* hover 浅灰 */
+  border-color: #BDBDBD;
+}
+
+.export-button:disabled {
+  background-color: #E0E0E0;
+  /* disabled 更浅 */
+  border-color: #E0E0E0;
+  color: #f2f2f2;
+  cursor: not-allowed;
 }
 </style>

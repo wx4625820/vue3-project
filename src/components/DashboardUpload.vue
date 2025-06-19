@@ -6,7 +6,9 @@
       <div class="header-row">
         <div class="upload-section">
           <el-upload :http-request="customUpload" :show-file-list="false" :before-upload="beforeUpload">
-            <el-button type="primary" :disabled="uploading">选择并上传视频</el-button>
+            <el-button type="primary" :disabled="uploading" class="teal-button">
+              选择并上传视频
+            </el-button>
           </el-upload>
         </div>
       </div>
@@ -44,6 +46,8 @@
           </el-select>
           <el-button type="primary" @click="analyzeVideo" :disabled="!selectedRole">一键分析</el-button>
           <el-button type="danger" @click="deleteVideo">删除视频</el-button>
+          <el-button class="export-button" v-if="showExportButton" @click="exportPdf">导出报告</el-button>
+
         </div>
       </div>
 
@@ -93,7 +97,9 @@ import { ElMessage } from 'element-plus'
 import request from '@/utils/request'
 import { Loading } from '@element-plus/icons-vue'
 import { marked } from 'marked'
+import html2pdf from 'html2pdf.js'
 
+const showExportButton = ref(false)
 const uploading = ref(false)
 const progress = ref(0)
 const videoUrl = ref<string | null>(null)
@@ -138,6 +144,38 @@ const radarOption = computed(() => ({
     areaStyle: {}
   }]
 }))
+
+const exportPdf = async () => {
+  const chartDom = document.querySelector('.analysis-result canvas') as HTMLCanvasElement
+  const outputBox = document.querySelector('.output-box') as HTMLElement
+
+  if (!chartDom || !outputBox) return
+
+  // 截图雷达图
+  const chartImg = chartDom.toDataURL('image/png')
+  const img = document.createElement('img')
+  img.src = chartImg
+  img.style.width = '100%'
+  img.style.marginTop = '20px'
+
+  // 添加图片到输出框末尾
+  outputBox.appendChild(img)
+
+  await nextTick()
+
+  // 导出 PDF
+  html2pdf().set({
+    margin: 0.5,
+    filename: `模拟面试分析报告_${new Date().toISOString().slice(0, 10)}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+  }).from(outputBox).save().then(() => {
+    // 导出完成后移除图片，避免重复
+    img.remove()
+  })
+}
+
 
 function extractRadarScores(markdown: string): number[] {
   const scoreMap: Record<string, number> = {}
@@ -285,34 +323,32 @@ const analyzeVideo = async () => {
         if (!showResultBox.value) showResultBox.value = true
         if (showAnalyzingDialog.value) showAnalyzingDialog.value = false
 
-        // ✅ 实时解析 markdown（不匹配代码块，直接全量渲染）
+        // 实时解析 markdown
         if (renderTimer) clearTimeout(renderTimer)
         renderTimer = window.setTimeout(() => {
-          renderedMarkdown.value = marked.parse(streamResult.value)
+          const raw = streamResult.value
+          const match = raw.match(/```markdown\s*([\s\S]*?)```/)
+          const pureMarkdown = match ? match[1].trim() : raw
+          renderedMarkdown.value = marked.parse(pureMarkdown)
         }, 80)
 
         await nextTick()
       }
     }
 
-    // ✅ 流式结束后，提取 markdown 代码块用于干净的评分提取
-    const match = streamResult.value.match(/```markdown\s*([\s\S]*?)```/)
-    const pureMarkdown = match ? match[1].trim() : streamResult.value
+    streamResult.value = streamResult.value.replace(/```markdown\s*([\s\S]*?)```/, (_, content) => content.trim())
 
-    // ✅ 更新最终展示用 markdown
-    renderedMarkdown.value = marked.parse(pureMarkdown)
 
     // ✅ 提取评分并更新雷达图
-    radarData.value = extractRadarScores(pureMarkdown)
+    radarData.value = extractRadarScores(streamResult.value)
     showChart.value = true
-
+    showExportButton.value = true
   } catch (err) {
     console.error('analyzeVideo error:', err)
     ElMessage.error('分析失败，请稍后再试')
     showAnalyzingDialog.value = false
   }
 }
-
 
 </script>
 
@@ -459,7 +495,10 @@ const analyzeVideo = async () => {
 }
 
 .stream-text {
-  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #333;
+  background-color: transparent;
   word-break: break-word;
   overflow-wrap: break-word;
 }
@@ -467,12 +506,23 @@ const analyzeVideo = async () => {
 .stream-text h1,
 .stream-text h2 {
   font-weight: bold;
-  margin: 16px 0 8px;
+  margin: 16px 0 10px;
   border-bottom: 1px solid #eaecef;
+  padding-bottom: 4px;
+  font-size: 18px;
 }
 
 .stream-text p {
-  margin: 10px 0;
+  margin: 6px 0;
+}
+
+.stream-text ul {
+  padding-left: 20px;
+  margin: 6px 0;
+}
+
+.stream-text li {
+  margin: 4px 0;
 }
 
 .stream-text code {
@@ -480,5 +530,96 @@ const analyzeVideo = async () => {
   padding: 2px 4px;
   border-radius: 4px;
   font-family: monospace;
+}
+
+.stream-text pre {
+  background-color: #f8f8f8;
+  color: #333;
+  padding: 12px;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  border: 1px solid #eaeaea;
+  margin: 10px 0;
+}
+
+.teal-button {
+  background-color: #3F51B5;
+  color: #fff;
+  border-color: #3F51B5;
+}
+
+.teal-button:hover {
+  background-color: #5C6BC0;
+  /* 比原色稍浅一点，适合作为 hover */
+  border-color: #5C6BC0;
+}
+
+.teal-button:disabled {
+  background-color: #C5CAE9;
+  /* 浅蓝灰 */
+  border-color: #C5CAE9;
+  color: #f2f2f2;
+  cursor: not-allowed;
+}
+
+.export-button {
+  background-color: #9E9E9E;
+  /* 中性灰 */
+  color: #fff;
+  border-color: #9E9E9E;
+}
+
+.export-button:hover {
+  background-color: #BDBDBD;
+  /* hover 更浅灰 */
+  border-color: #BDBDBD;
+}
+
+.export-button:disabled {
+  background-color: #E0E0E0;
+  /* disabled 状态 */
+  border-color: #E0E0E0;
+  color: #f2f2f2;
+  cursor: not-allowed;
+}
+
+
+.video-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* 所有按钮统一宽高 */
+.video-actions :deep(.el-button) {
+  width: 120px;
+  height: 40px;
+  font-size: 14px;
+  padding: 0 20px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 🚨 强制让 el-select 和 el-button 完全一致 */
+.video-actions :deep(.el-select) {
+  width: 120px;
+  min-width: 120px;
+}
+
+.video-actions :deep(.el-input__wrapper) {
+  height: 40px;
+  padding: 0 20px;
+  /* 原本 Element Plus 是 11px，这里强制改为 20px 和按钮一致 */
+  box-sizing: border-box;
+  font-size: 14px;
+  border-radius: 6px;
+  justify-content: center;
+  /* 让箭头居中 */
 }
 </style>
