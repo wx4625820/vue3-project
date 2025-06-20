@@ -461,12 +461,12 @@ const analyzeVideo = async () => {
 }
 
 .dimension-explanation {
-  font-size: 16px;
+  font-size: 20px;
   line-height: 1.8;
   text-align: left;
   word-break: break-word;
-  margin-left: 44px;
-  margin-top: 68px;
+  margin-left: 75px;
+  margin-top: 48px;
 }
 
 .dim {

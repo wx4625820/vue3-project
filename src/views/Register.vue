@@ -3,33 +3,38 @@
     <div class="card">
       <h2>注册账号</h2>
 
-      <el-form
-        :model="registerForm"
-        :rules="rules"
-        ref="registerFormRef"
-        label-width="80px"
-        class="form"
-      >
-        <el-form-item label="用户名" prop="username">
+      <el-form :model="registerForm" :rules="rules" ref="registerFormRef" label-width="80px" class="form"
+        label-position="left">
+        <!-- 用户名 -->
+        <el-form-item label="用户名：" prop="username">
           <el-input v-model="registerForm.username" placeholder="请输入用户名" />
         </el-form-item>
 
-        <el-form-item label="邮箱" prop="email">
+        <!-- 邮箱 -->
+        <el-form-item label="邮箱：" prop="email">
           <el-input v-model="registerForm.email" placeholder="请输入邮箱" />
         </el-form-item>
 
-        <el-form-item label="密码" prop="password">
+        <!-- 密码 -->
+        <el-form-item label="密码：" prop="password">
           <el-input v-model="registerForm.password" type="password" placeholder="请输入密码" show-password />
         </el-form-item>
 
+        <!-- 按钮区域 -->
         <el-form-item>
-          <el-button type="primary" @click="onRegister">注册</el-button>
-          <el-button type="text" @click="goToLogin">已有账号？登录</el-button>
+          <el-button type="primary" class="uniform-button" @click="onRegister">
+            注册
+          </el-button>
+
+          <el-button type="text" class="uniform-button" @click="goToLogin">
+            已有账号？登录
+          </el-button>
         </el-form-item>
       </el-form>
     </div>
   </div>
 </template>
+
 
 <script lang="ts" setup>
 import { reactive, ref } from 'vue'
@@ -115,5 +120,17 @@ h2 {
 
 .form {
   margin-top: 10px;
+}
+
+.uniform-button {
+  width: 120px;
+  height: 40px;
+  font-size: 14px;
+  padding: 0 20px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
 }
 </style>

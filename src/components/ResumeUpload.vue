@@ -8,7 +8,7 @@
       </el-upload>
 
       <el-button type="primary" :loading="analyzing" @click="analyze">一键分析</el-button>
-      <el-button class="edit-button" @click="dialogVisible = true">编辑</el-button>
+      <el-button class="edit-button" @click="dialogVisible = true">放大编辑</el-button>
       <el-button type="danger" @click="resumeStore.clear()">删除简历</el-button>
       <el-button class="export-button" v-if="showExportButton" @click="exportPdf">导出报告</el-button>
 
@@ -32,7 +32,7 @@
 
     <!-- 分析提示信息 -->
     <div class="card-tip">
-      基于讯飞星火X1大语言模型，分析报告生成约需1分钟，预计消耗500token，中途请不要退出。
+      基于讯飞星火X1大语言模型，分析报告生成约需1分钟，预计消耗2000token，中途请不要退出。
     </div>
 
 

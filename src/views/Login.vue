@@ -4,20 +4,34 @@
       <h2>登录系统</h2>
 
       <el-form :model="loginForm" :rules="rules" ref="loginFormRef" label-width="80px" class="form">
+        <!-- 邮箱 -->
         <el-form-item label="邮箱" prop="email">
           <el-input v-model="loginForm.email" placeholder="请输入邮箱" />
         </el-form-item>
 
+        <!-- 密码 -->
         <el-form-item label="密码" prop="password">
           <el-input v-model="loginForm.password" type="password" placeholder="请输入密码" />
         </el-form-item>
 
+        <!-- 用户协议勾选 -->
+        <el-form-item prop="agree">
+          <el-checkbox v-model="loginForm.agree">
+            同意 <a href="#" target="_blank">用户协议</a>、<a href="#" target="_blank">隐私政策</a>
+          </el-checkbox>
+        </el-form-item>
+
+        <!-- 登录按钮独占一行 -->
         <el-form-item>
-          <el-button type="primary" @click="onSubmit">登录</el-button>
-          <el-button type="text" @click="goToRegister">还没有账号？去注册</el-button>
-          <div class="forgot-password">
-            <el-button type="text" @click="goToForgot">忘记密码？</el-button>
-          </div>
+          <el-button type="primary" class="uniform-button" @click="onSubmit" :disabled="!loginForm.agree">
+            登录
+          </el-button>
+        </el-form-item>
+
+        <!-- 注册 / 忘记密码左右居中显示 -->
+        <el-form-item class="bottom-actions">
+          <el-button type="text" @click="goToRegister">立即注册</el-button>
+          <el-button type="text" @click="goToForgot">忘记密码</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -36,16 +50,15 @@ const loginFormRef = ref<FormInstance>()
 const loginForm = reactive({
   email: '',
   password: '',
+  agree: false
 })
 
 const rules: FormRules = {
   email: [
     { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '邮箱格式不正确', trigger: ['blur', 'change'] },
+    { type: 'email', message: '邮箱格式不正确', trigger: ['blur', 'change'] }
   ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-  ],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
 
 const onSubmit = () => {
@@ -58,13 +71,13 @@ const onSubmit = () => {
     try {
       const res = await request.post('/user/login', {
         email: loginForm.email,
-        password: loginForm.password,
+        password: loginForm.password
       })
 
       ElMessage.success('登录成功')
       router.push('/home')
     } catch (e) {
-      // 错误信息已经在拦截器中弹出，无需重复处理
+      // 错误信息已经在拦截器中处理
     }
   })
 }
@@ -86,7 +99,6 @@ const goToForgot = () => {
   height: 100vh;
   background: linear-gradient(135deg, #e6f0ff, #cfe0f5);
   font-family: 'Georgia', serif;
-  background-color: #d9ecff;
 }
 
 .card {
@@ -96,7 +108,6 @@ const goToForgot = () => {
   padding: 40px 30px;
   width: 400px;
   margin-top: -100px;
-  /* 向上挪动20px */
 }
 
 h2 {
@@ -106,12 +117,27 @@ h2 {
   margin-bottom: 20px;
 }
 
-.forgot-password {
-  margin-left: auto;
-  padding-top: 4px;
-}
-
 .form {
   margin-top: 10px;
+  text-align: center;
+  /* 居中表单内容 */
+}
+
+.bottom-actions {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 10px;
+}
+
+.uniform-button {
+  width: 180px;
+  height: 40px;
+  padding: 0 20px;
+  box-sizing: border-box;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

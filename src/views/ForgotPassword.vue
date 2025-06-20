@@ -9,8 +9,14 @@
           <el-input v-model="form.email" autocomplete="off" placeholder="请输入注册邮箱" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :loading="loading" @click="onSendCode">发送验证码</el-button>
+          <el-button type="primary" :loading="loading" @click="onSendCode" class="uniform-button">
+            发送验证码
+          </el-button>
+          <el-button type="primary" @click="goToLogin" class="uniform-button">
+            返回登录
+          </el-button>
         </el-form-item>
+
       </el-form>
     </div>
   </div>
@@ -30,16 +36,14 @@ const form = reactive({
   email: ''
 })
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
 const rules: FormRules = {
   email: [
     { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { pattern: emailPattern, message: '邮箱格式不正确', trigger: ['blur', 'change'] }
+    { pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: '邮箱格式不正确', trigger: ['blur', 'change'] }
   ]
 }
 
-const onSendCode = () => {
+const onSendCode = async () => {
   formRef.value?.validate(async (valid) => {
     if (!valid) return
     loading.value = true
@@ -55,14 +59,19 @@ const onSendCode = () => {
         ElMessage.error(res.data.message || '发送验证码失败')
       }
     } catch (error) {
-      console.error('请求异常:', error)
       ElMessage.error('发送验证码接口异常')
     } finally {
       loading.value = false
     }
   })
 }
+
+// ✅ 新增跳转函数
+const goToLogin = () => {
+  router.push('/login')
+}
 </script>
+
 
 <style scoped>
 .forgot-password-page {
