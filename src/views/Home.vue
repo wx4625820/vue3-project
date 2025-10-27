@@ -36,14 +36,48 @@
               <el-icon><Upload /></el-icon>
               <span>上传知识库</span>
             </el-menu-item>
-            <el-menu-item index="settings" class="nav-item">
-              <el-icon><Setting /></el-icon>
-              <span>设置</span>
+            <el-menu-item index="profile" class="nav-item">
+              <el-icon><User /></el-icon>
+              <span>个人中心</span>
             </el-menu-item>
           </el-menu>
         </div>
 
-        <!-- 用户信息区域（包含个人中心） -->
+        <!-- 搜索区域 -->
+        <div class="search-section">
+          <div class="search-container">
+            <el-input
+              v-model="searchQuery"
+              placeholder="搜索功能、内容..."
+              class="search-input"
+              @input="handleSearch"
+              @focus="showSearchSuggestions = true"
+              @blur="hideSearchSuggestions"
+            >
+              <template #prefix>
+                <el-icon class="search-icon"><Search /></el-icon>
+              </template>
+            </el-input>
+            
+            <!-- 搜索建议下拉框 -->
+            <div v-if="showSearchSuggestions && searchSuggestions.length > 0" class="search-suggestions">
+              <div
+                v-for="(suggestion, index) in searchSuggestions"
+                :key="index"
+                class="suggestion-item"
+                @click="selectSuggestion(suggestion)"
+              >
+                <el-icon class="suggestion-icon">
+                  <component :is="suggestion.icon" />
+                </el-icon>
+                <span class="suggestion-text">{{ suggestion.text }}</span>
+                <span class="suggestion-type">{{ suggestion.type }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 用户信息区域 -->
         <div class="user-section">
           <div class="user-info">
             <div class="user-avatar">
@@ -54,6 +88,15 @@
               <div class="user-actions">
                 <UsageCounter />
               </div>
+            </div>
+            <!-- 主题切换按钮 -->
+            <div class="theme-toggle" @click="toggleTheme">
+              <el-icon v-if="isDarkMode" class="theme-icon">
+                <Sunny />
+              </el-icon>
+              <el-icon v-else class="theme-icon">
+                <Moon />
+              </el-icon>
             </div>
             <el-dropdown trigger="click" @command="handleUserCommand" class="user-dropdown">
               <el-button type="text" class="user-dropdown-btn">
@@ -208,7 +251,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { 
@@ -222,9 +265,12 @@ import {
   ArrowDown,
   DataAnalysis,
   QuestionFilled,
+  Search,
   Edit,
   ChatDotRound,
-  Phone
+  Phone,
+  Sunny,
+  Moon
 } from '@element-plus/icons-vue'
 
 import DashboardUpload from '@/components/DashboardUpload.vue'
@@ -238,8 +284,112 @@ const activeMenu = ref('dashboard')
 const userAvatar = ref('')
 const notifications = ref(true)
 
+// 搜索相关状态
+const searchQuery = ref('')
+const showSearchSuggestions = ref(false)
+const searchSuggestions = ref<any[]>([])
+
+// 主题相关状态
+const isDarkMode = ref(false)
+
+// 搜索建议数据
+const allSuggestions = [
+  { text: '模拟面试', type: '功能', icon: 'Monitor', action: 'dashboard' },
+  { text: '简历分析', type: '功能', icon: 'Document', action: 'interviews' },
+  { text: '知识库', type: '功能', icon: 'Collection', action: 'questions' },
+  { text: '上传知识库', type: '功能', icon: 'Upload', action: 'upload' },
+  { text: '个人中心', type: '功能', icon: 'User', action: 'profile' },
+  { text: '面试技巧', type: '内容', icon: 'ChatDotRound', action: 'search' },
+  { text: '简历模板', type: '内容', icon: 'Document', action: 'search' },
+  { text: '职业规划', type: '内容', icon: 'TrendCharts', action: 'search' },
+  { text: '面试问题', type: '内容', icon: 'QuestionFilled', action: 'search' },
+  { text: '技能提升', type: '内容', icon: 'Star', action: 'search' }
+]
+
 const handleMenuSelect = (index: string) => {
   activeMenu.value = index
+}
+
+// 搜索处理方法
+const handleSearch = () => {
+  if (searchQuery.value.trim() === '') {
+    searchSuggestions.value = []
+    return
+  }
+  
+  const query = searchQuery.value.toLowerCase()
+  searchSuggestions.value = allSuggestions.filter(suggestion => 
+    suggestion.text.toLowerCase().includes(query) ||
+    suggestion.type.toLowerCase().includes(query)
+  ).slice(0, 8) // 限制显示8个建议
+}
+
+// 选择搜索建议
+const selectSuggestion = (suggestion: any) => {
+  searchQuery.value = suggestion.text
+  showSearchSuggestions.value = false
+  
+  if (suggestion.action !== 'search') {
+    handleMenuSelect(suggestion.action)
+  } else {
+    // 执行搜索操作
+    performSearch(suggestion.text)
+  }
+}
+
+// 执行搜索
+const performSearch = (query: string) => {
+  ElMessage.info(`正在搜索: ${query}`)
+  // 这里可以添加实际的搜索逻辑
+}
+
+// 隐藏搜索建议
+const hideSearchSuggestions = () => {
+  setTimeout(() => {
+    showSearchSuggestions.value = false
+  }, 200)
+}
+
+// 主题切换方法
+const toggleTheme = () => {
+  // 添加旋转动画
+  const themeToggle = document.querySelector('.theme-toggle')
+  if (themeToggle) {
+    themeToggle.classList.add('rotating')
+    setTimeout(() => {
+      themeToggle.classList.remove('rotating')
+    }, 300)
+  }
+  
+  isDarkMode.value = !isDarkMode.value
+  updateTheme()
+  ElMessage.success(isDarkMode.value ? '已切换到深色模式' : '已切换到浅色模式')
+}
+
+// 更新主题
+const updateTheme = () => {
+  const body = document.body
+  if (isDarkMode.value) {
+    body.classList.add('dark-theme')
+    body.classList.remove('light-theme')
+  } else {
+    body.classList.add('light-theme')
+    body.classList.remove('dark-theme')
+  }
+  // 保存主题偏好到本地存储
+  localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light')
+}
+
+// 初始化主题
+const initTheme = () => {
+  const savedTheme = localStorage.getItem('theme')
+  if (savedTheme) {
+    isDarkMode.value = savedTheme === 'dark'
+  } else {
+    // 检测系统主题偏好
+    isDarkMode.value = window.matchMedia('(prefers-color-scheme: dark)').matches
+  }
+  updateTheme()
 }
 
 const handleUserCommand = (command: string) => {
@@ -266,9 +416,50 @@ const logout = () => {
   router.push('/login')
 }
 
+// 组件挂载时初始化主题
+onMounted(() => {
+  initTheme()
+})
+
 </script>
 
 <style scoped>
+/* 导入 Inter 字体 */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* 全局主题样式 */
+:global(.light-theme) {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --border-color: #e5e7eb;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+:global(.dark-theme) {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --border-color: #334155;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+:global(body) {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+:global(.light-theme body) {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+:global(.dark-theme body) {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
 .home-container {
   display: flex;
   flex-direction: column;
@@ -277,18 +468,15 @@ const logout = () => {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-/* 导入 Inter 字体 */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 /* 头部导航栏样式 */
 .header-wrapper {
-  background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.2);
   position: sticky;
   top: 0;
   z-index: 1000;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(20px);
 }
 
 .header-nav {
@@ -359,19 +547,21 @@ const logout = () => {
 :deep(.nav-item) {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   height: 80px;
-  padding: 0 32px;
-  border-bottom: 4px solid transparent;
-  transition: all 0.3s ease;
+  padding: 0 24px;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   font-weight: 600;
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.95) !important;
-  margin: 0 8px;
-  border-radius: 8px 8px 0 0;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.9) !important;
+  margin: 0 4px;
+  border-radius: 12px 12px 0 0;
   position: relative;
   overflow: hidden;
   font-family: 'Inter', sans-serif;
+  min-width: 120px;
+  justify-content: center;
 }
 
 :deep(.nav-item::before) {
@@ -387,11 +577,11 @@ const logout = () => {
 }
 
 :deep(.nav-item:hover) {
-  background-color: rgba(255, 255, 255, 0.15) !important;
+  background-color: rgba(255, 255, 255, 0.12) !important;
   color: #ffffff !important;
-  border-bottom-color: rgba(255, 255, 255, 0.6);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 255, 255, 0.15);
+  border-bottom-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(255, 255, 255, 0.15);
 }
 
 :deep(.nav-item:hover::before) {
@@ -399,11 +589,11 @@ const logout = () => {
 }
 
 :deep(.nav-item.is-active) {
-  background-color: rgba(255, 255, 255, 0.2) !important;
+  background-color: rgba(255, 255, 255, 0.18) !important;
   color: #ffffff !important;
   border-bottom-color: #ffffff;
-  box-shadow: 0 8px 25px rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
 }
 
 :deep(.nav-item.is-active::before) {
@@ -428,13 +618,13 @@ const logout = () => {
 .user-info {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 12px 20px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
+  gap: 14px;
+  padding: 10px 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(20px);
   cursor: pointer;
   position: relative;
   overflow: hidden;
@@ -453,10 +643,10 @@ const logout = () => {
 }
 
 .user-info:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(255, 255, 255, 0.18);
 }
 
 .user-info:hover::before {
@@ -503,6 +693,235 @@ const logout = () => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* 主题切换按钮样式 */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(20px);
+  position: relative;
+  overflow: hidden;
+  margin-left: 8px;
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.15);
+}
+
+.theme-toggle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.theme-toggle:hover::before {
+  opacity: 0.1;
+}
+
+.theme-icon {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.9);
+  transition: all 0.3s ease;
+}
+
+.theme-toggle:hover .theme-icon {
+  color: #ffffff;
+  transform: scale(1.1);
+}
+
+/* 主题切换动画 */
+.theme-icon {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-toggle:active .theme-icon {
+  transform: scale(0.9);
+}
+
+/* 主题切换时的旋转动画 */
+.theme-toggle.rotating .theme-icon {
+  animation: rotate 0.3s ease-in-out;
+}
+
+@keyframes rotate {
+  0% { transform: rotate(0deg); }
+  50% { transform: rotate(180deg) scale(1.2); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 搜索区域样式 */
+.search-section {
+  display: flex;
+  align-items: center;
+  margin: 0 20px;
+  position: relative;
+}
+
+.search-container {
+  position: relative;
+  width: 280px;
+}
+
+.search-input {
+  width: 100%;
+}
+
+:deep(.search-input .el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:deep(.search-input .el-input__wrapper:hover) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+:deep(.search-input .el-input__wrapper.is-focus) {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+:deep(.search-input .el-input__inner) {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  padding-left: 40px;
+}
+
+:deep(.search-input .el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 400;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 16px;
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+:deep(.search-input .el-input__wrapper.is-focus) .search-icon {
+  color: #ffffff;
+  transform: translateY(-50%) scale(1.1);
+}
+
+/* 搜索建议样式 */
+.search-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  margin-top: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  transition: width 0.3s ease;
+  z-index: -1;
+}
+
+.suggestion-item:hover {
+  background: rgba(102, 126, 234, 0.1);
+  transform: translateX(4px);
+}
+
+.suggestion-item:hover::before {
+  width: 100%;
+}
+
+.suggestion-item:hover .suggestion-text {
+  color: #ffffff;
+}
+
+.suggestion-item:hover .suggestion-type {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.suggestion-icon {
+  margin-right: 12px;
+  font-size: 16px;
+  color: #667eea;
+  transition: all 0.3s ease;
+}
+
+.suggestion-item:hover .suggestion-icon {
+  color: #ffffff;
+  transform: scale(1.1);
+}
+
+.suggestion-text {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+  transition: all 0.3s ease;
+}
+
+.suggestion-type {
+  font-size: 12px;
+  color: #6b7280;
+  background: rgba(102, 126, 234, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
 }
 
 .user-dropdown {
@@ -613,6 +1032,9 @@ const logout = () => {
 :deep(.el-dropdown-menu__item:last-child .el-icon) {
   color: #EF4444;
 }
+
+
+
 
 /* 主体内容区域 */
 .main-content {
@@ -791,16 +1213,56 @@ const logout = () => {
 /* 响应式设计 */
 @media (max-width: 1024px) {
   .header-nav {
-    padding: 0 16px;
+    padding: 0 20px;
   }
   
   :deep(.nav-item) {
-    padding: 0 12px;
-    font-size: 13px;
+    padding: 0 16px;
+    font-size: 14px;
+    min-width: 100px;
   }
   
   .brand-name {
-    font-size: 18px;
+    font-size: 20px;
+  }
+  
+  .user-details {
+    min-width: 100px;
+  }
+  
+  .search-container {
+    width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .search-section {
+    margin: 0 10px;
+  }
+  
+  .search-container {
+    width: 150px;
+  }
+  
+  :deep(.search-input .el-input__inner) {
+    font-size: 12px;
+  }
+  
+  .search-suggestions {
+    max-height: 200px;
+  }
+  
+  .suggestion-item {
+    padding: 8px 12px;
+  }
+  
+  .suggestion-text {
+    font-size: 12px;
+  }
+  
+  .suggestion-type {
+    font-size: 10px;
+    padding: 1px 6px;
   }
 }
 
